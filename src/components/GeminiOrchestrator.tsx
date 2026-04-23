@@ -37,7 +37,7 @@ interface Message {
 
 export function GeminiOrchestrator({ agents, onUpdateAgent, onStartTraining }: GeminiOrchestratorProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: "Systems online. I am the Nexus Architect. I can help you design neural pipelines, configure specific module parameters, and optimize your agent's execution flow. What are we building today?" }
+    { role: 'model', text: "Systems online. I am the Bastion Architect. I can help you design neural pipelines, configure specific module parameters, and optimize your agent's execution flow. What are we building today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +58,7 @@ export function GeminiOrchestrator({ agents, onUpdateAgent, onStartTraining }: G
     setIsLoading(true);
 
     try {
-      const systemInstruction = `You are the Nexus Architect, a specialized AI for building autonomous agents and neural networks from scratch in the Nexus Agent Training Lab.
+      const systemInstruction = `You are the Bastion Architect, a specialized AI for building autonomous agents and neural networks from scratch in the Bastion Agent Training Lab.
       Your expertise lies in designing "neural pipelines" (sequences of modules) across various frameworks (JAX, Python, PyTorch) to solve complex tasks.
       
       Core Capabilities:

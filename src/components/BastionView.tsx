@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { BastionLogo } from './BastionLogo';
 
-export default function NexusView() {
+export default function BastionView() {
   const [key, setKey] = React.useState(0);
   const [isAgentHandling, setIsAgentHandling] = React.useState(false);
   const [agentCommand, setAgentCommand] = React.useState('');
@@ -29,7 +30,7 @@ export default function NexusView() {
     setIsExecuting(true);
     setOutput('> Initializing sequence...\n');
     try {
-      const response = await fetch('/api/nexus/execute', {
+      const response = await fetch('/api/bastion/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code })
@@ -62,7 +63,7 @@ export default function NexusView() {
       // For agents, we wrap their command in a print statement if it's just an expression
       const wrappedCode = userCmd.includes('print') || userCmd.includes('=') ? userCmd : `print(${userCmd})`;
       
-      const response = await fetch('/api/nexus/execute', {
+      const response = await fetch('/api/bastion/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: wrappedCode })
@@ -84,12 +85,11 @@ export default function NexusView() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-10rem)] space-y-4">
-      <HardwareHUD />
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-            <Terminal className="w-6 h-6 text-orange-500" />
-            Nexus Neural Environment
+            <BastionLogo size={28} />
+            Bastion Neural Environment
           </h2>
           <p className="text-zinc-500 text-sm">Direct kernel access for neural prototyping and DPO alignment.</p>
         </div>
@@ -112,7 +112,7 @@ export default function NexusView() {
             <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Code2 className="w-4 h-4 text-orange-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 font-mono">nexus_kernel.py</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 font-mono">bastion_kernel.py</span>
               </div>
               <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/30 text-[9px]">v4.2.0-STABLE</Badge>
             </div>
@@ -145,7 +145,7 @@ export default function NexusView() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-xs uppercase tracking-widest text-orange-500 font-black flex items-center gap-2">
                 <Bot className="w-4 h-4" />
-                Nexus Agent Core
+                Bastion Agent Core
               </CardTitle>
               <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-500 bg-emerald-500/5">Active</Badge>
             </div>
@@ -211,118 +211,10 @@ export default function NexusView() {
       
       <div className="bg-orange-500/5 border border-orange-500/10 rounded-xl p-4 flex gap-3 text-xs text-orange-500/80">
         <Terminal className="w-4 h-4 flex-shrink-0" />
-        Note: The Nexus environment is proxied through the main cluster gateway. Sequence agents can access all variables in the active Jupyter session.
+        Note: The Bastion environment is proxied through the main cluster gateway. Sequence agents can access all variables in the active Jupyter session.
       </div>
     </div>
   );
 }
 
-function HardwareHUD() {
-  const [metrics, setMetrics] = React.useState<any>(null);
-  const [status, setStatus] = React.useState<'disconnected' | 'connected'>('disconnected');
-
-  React.useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const socket = new WebSocket(`${protocol}//${host}`);
-
-    socket.onopen = () => setStatus('connected');
-    socket.onclose = () => setStatus('disconnected');
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setMetrics(data);
-      } catch (e) {
-        // ignore malformed metrics
-      }
-    };
-
-    return () => socket.close();
-  }, []);
-
-  if (!metrics) {
-    return (
-      <div className="fixed bottom-8 left-8 z-[100] bg-zinc-950/80 border border-zinc-800 p-3 rounded-xl flex items-center gap-3">
-        <Activity className="w-4 h-4 text-zinc-600 animate-pulse" />
-        <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Waiting for hardware link...</span>
-      </div>
-    );
-  }
-
-  const isWarning = metrics.npu > 85;
-
-  return (
-    <div className={cn(
-      "fixed bottom-8 left-8 z-[100] w-72 bg-zinc-950/90 backdrop-blur-md border rounded-2xl shadow-2xl p-4 space-y-4 animate-in slide-in-from-left-4 fade-in duration-500",
-      isWarning ? "border-orange-500/50 shadow-orange-500/5" : "border-zinc-800"
-    )}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MonitorCheck className={cn("w-4 h-4", status === 'connected' ? "text-emerald-500" : "text-zinc-600")} />
-          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Hardware HUD</span>
-        </div>
-        <Badge variant="outline" className={cn(
-          "text-[8px] h-3.5 border-none",
-          isWarning ? "bg-orange-500/20 text-orange-400 animate-pulse" : "bg-zinc-800 text-zinc-500"
-        )}>
-          {isWarning ? 'THERMAL WARNING' : 'NOMINAL'}
-        </Badge>
-      </div>
-
-      <div className="space-y-3">
-        {/* CPU */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[9px] font-mono">
-            <div className="flex items-center gap-1.5 text-zinc-500">
-              <Cpu className="w-3 h-3" />
-              CPU LOAD
-            </div>
-            <span className="text-zinc-300 font-bold">{metrics.cpu}%</span>
-          </div>
-          <Progress value={metrics.cpu} className="h-1 bg-zinc-800" indicatorClassName="bg-zinc-400" />
-        </div>
-
-        {/* RAM */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[9px] font-mono">
-            <div className="flex items-center gap-1.5 text-zinc-500">
-              <Activity className="w-3 h-3" />
-              SYSTEM RAM
-            </div>
-            <span className="text-zinc-300 font-bold">{metrics.ram} GB</span>
-          </div>
-          <Progress value={(metrics.ram / 16) * 100} className="h-1 bg-zinc-800" indicatorClassName="bg-blue-500" />
-        </div>
-
-        {/* NPU (QNN) */}
-        <div className="space-y-1.5 pt-1 border-t border-zinc-800/50">
-          <div className="flex justify-between text-[9px] font-mono">
-            <div className="flex items-center gap-1.5 text-orange-500 font-bold">
-              <Gauge className="w-3 h-3" />
-              QNN NPU (EP)
-            </div>
-            <span className={cn("font-bold", isWarning ? "text-orange-500" : "text-white")}>{metrics.npu}%</span>
-          </div>
-          <Progress 
-            value={metrics.npu} 
-            className="h-1.5 bg-zinc-800" 
-            indicatorClassName={cn("transition-all duration-500", isWarning ? "bg-orange-500" : "bg-emerald-500")} 
-          />
-          <div className="flex justify-between text-[8px] font-mono text-zinc-600 uppercase">
-             <span>Thermal: {metrics.npu_temp}°C</span>
-             <span>EP: ONNX_RUNTIME_QNN</span>
-          </div>
-        </div>
-      </div>
-
-      {isWarning && (
-        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2 flex gap-2">
-          <ShieldAlert className="w-3 h-3 text-orange-500 flex-shrink-0" />
-          <p className="text-[9px] text-orange-200/80 leading-tight font-medium">
-            Critical NPU load detected. High risk of OOM crash. Reduce batch size in jax_training.py.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
+// HardwareHUD removed as it's moved to the sidebar

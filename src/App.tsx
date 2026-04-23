@@ -65,10 +65,12 @@ import TrainingView, { generateDummyMetrics } from './components/TrainingView';
 import VersionControl from './components/VersionControl';
 import { GeminiOrchestrator } from './components/GeminiOrchestrator';
 import { UniversalOrchestrator } from './components/UniversalOrchestrator';
-import NexusView from './components/NexusView';
+import BastionView from './components/BastionView';
 import OrchestratorSettings from './components/OrchestratorSettings';
 import TutoringLab from './components/TutoringLab';
 import TemplatesView from './components/TemplatesView';
+import HardwareIntelligenceMonitor from './components/HardwareIntelligenceMonitor';
+import BastionLogo from './components/BastionLogo';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -129,7 +131,7 @@ export default function App() {
   const [newAgentMetadata, setNewAgentMetadata] = useState({ 
     name: '', 
     description: '', 
-    coreModel: 'Gemini 1.5 Flash',
+    coreModel: 'New neural network',
     systemInstruction: 'You are an autonomous agent designed to solve complex tasks using neural modules.' 
   });
 
@@ -165,11 +167,13 @@ export default function App() {
     <div className="flex min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-orange-500/30 overflow-y-auto dark">
       {/* Sidebar Navigation */}
       <aside className="w-64 border-r border-zinc-800 bg-zinc-900/50 flex flex-col">
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <BastionLogo size={32} />
+            <h1 className="font-bold text-xl tracking-tight">BASTION</h1>
           </div>
-          <h1 className="font-bold text-xl tracking-tight">NEXUS</h1>
+          
+          <HardwareIntelligenceMonitor />
         </div>
 
         <ScrollArea className="flex-1">
@@ -188,9 +192,9 @@ export default function App() {
           />
           <SidebarItem 
             icon={<Terminal className="w-4 h-4" />} 
-            label="Nexus Research" 
-            active={activeTab === 'nexus'} 
-            onClick={() => setActiveTab('nexus')}
+            label="Bastion Research" 
+            active={activeTab === 'bastion'} 
+            onClick={() => setActiveTab('bastion')}
           />
           <SidebarItem 
             icon={<Wand2 className="w-4 h-4" />} 
@@ -338,7 +342,7 @@ export default function App() {
                   setActiveTab('builder');
                   toast.success(`${template.name} deployed successfully`);
                 }} />}
-                {activeTab === 'nexus' && <NexusView />}
+                {activeTab === 'bastion' && <BastionView />}
                 {activeTab === 'skills' && <SkillsView onInstall={(skill) => {
                   toast.success(`Skill "${skill.name}" integrated into neural architecture.`);
                 }} />}

@@ -274,7 +274,7 @@ export default function Builder({ agent, onUpdate }: BuilderProps) {
 
   const handleModuleAction = async (actionId: string, config: Record<string, any>) => {
     if (actionId === 'compile-trigger') {
-      const loadingId = toast.loading("Nexus: Accessing export_cbt_block_stablehlo.py...");
+      const loadingId = toast.loading("Bastion: Accessing export_cbt_block_stablehlo.py...");
       try {
         const response = await fetch('/api/edge/compile', {
           method: 'POST',

@@ -39,7 +39,7 @@ interface Message {
 
 export function UniversalOrchestrator({ agents, orchestratorConfig, onUpdateAgent, onStartTraining }: UniversalOrchestratorProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: `Neural Nexus active. Routing through ${orchestratorConfig.provider === 'gemini' ? 'Gemini Cluster' : orchestratorConfig.modelName}. I am your unified neural architect.` }
+    { role: 'model', text: `Neural Bastion active. Routing through ${orchestratorConfig.provider === 'gemini' ? 'Gemini Cluster' : orchestratorConfig.modelName}. I am your unified neural architect.` }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -60,7 +60,7 @@ export function UniversalOrchestrator({ agents, orchestratorConfig, onUpdateAgen
     setIsLoading(true);
 
     try {
-      const systemInstruction = `You are the Nexus Architect, a specialized AI for building autonomous agents.
+      const systemInstruction = `You are the Bastion Architect, a specialized AI for building autonomous agents.
       Provider: ${orchestratorConfig.provider}
       Active Model: ${orchestratorConfig.modelName}
       

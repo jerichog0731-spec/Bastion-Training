@@ -116,7 +116,7 @@ export default function OrchestratorSettings({ config, onUpdate }: OrchestratorS
                     <div className="relative">
                       <Cpu className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-700" />
                       <Input 
-                        placeholder="nexus-custom-v1"
+                        placeholder="bastion-custom-v1"
                         className="bg-zinc-950 border-zinc-800 pl-9 text-xs"
                         value={config.modelName}
                         onChange={(e) => onUpdate({ ...config, modelName: e.target.value })}

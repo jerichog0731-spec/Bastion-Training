@@ -31,7 +31,8 @@ import {
   ShieldCheck,
   ChevronDown,
   Archive,
-  Boxes
+  Boxes,
+  Calculator
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -124,9 +125,20 @@ export default function TrainingView({ agents, jobs, setJobs }: TrainingViewProp
         { id: 'thinking', label: 'EXTENDED THINKING MODE', icon: <Search className="w-3 h-3 text-purple-400" />, description: 'Allocate additional inference cycles. Supports QUICK, STANDARD, DEEP, and RESEARCH levels.' },
         { id: 'reflection', label: 'SELF-REFLECTION LOOP', icon: <ShieldCheck className="w-3 h-3 text-emerald-400" />, description: 'Internal critique pass for consistency, accuracy, and intent alignment.' },
         { id: 'tot', label: 'TREE-OF-THOUGHT BRANCHING', icon: <GitBranch className="w-3 h-3 text-orange-400" />, description: 'Parallel solution branches with scoring and optimal path selection.' },
-        { id: 'planning', label: 'PLANNING ENGINE', icon: <Target className="w-3 h-3 text-red-400" />, description: 'Structured execution plan with dependency mapping and estimated difficulty.' },
+        { id: 'planning', label: 'PLANNING ENGINE', icon: <Target className="w-3 h-3 text-red-400" />, description: 'Structured execution plan with mapping and estimated difficulty.' },
         { id: 'signatures', label: 'THOUGHT SIGNATURES', icon: <MessageSquareCode className="w-3 h-3 text-cyan-400" />, description: 'Persistent reasoning state anchoring logically across long tool-use sessions.' },
         { id: 'adaptive', label: 'ADAPTIVE DEPTH', icon: <Zap className="w-3 h-3 text-yellow-400" />, description: 'Automatically calibrate reasoning effort to match task complexity.' },
+      ]
+    },
+    {
+      id: "scratch",
+      name: "Basal Intelligence (Scratch Foundation)",
+      icon: <Calculator className="w-4 h-4 text-emerald-500" />,
+      items: [
+        { id: 'numpy_scratch', label: 'NUMPY ARRAY OPS', icon: <Boxes className="w-3 h-3 text-emerald-500" />, description: 'Teach fundamental matrix multiplications and array manipulation logic.' },
+        { id: 'backprop', label: 'MANUAL BACKPROPAGATION', icon: <Zap className="w-3 h-3 text-yellow-500" />, description: 'Implement raw gradient descent logic from scratch without frameworks.' },
+        { id: 'linear_algebra', label: 'LINEAR ALGEBRA BASICS', icon: <Layers className="w-3 h-3 text-blue-500" />, description: 'Foundational mathematics for neural spatial relationships.' },
+        { id: 'initialization', label: 'WEIGHT INITIALIZATION', icon: <Sparkles className="w-3 h-3 text-orange-500" />, description: 'Optimizing starting states for neural convergence.' },
       ]
     }
   ];
@@ -283,7 +295,7 @@ export default function TrainingView({ agents, jobs, setJobs }: TrainingViewProp
       setSelectedTrigger(null);
       setArenaResponses([]);
     } catch (e) {
-      toast.error("Failed to sync preference with Nexus.");
+      toast.error("Failed to sync preference with Bastion.");
     }
   };
 
@@ -675,7 +687,7 @@ export default function TrainingView({ agents, jobs, setJobs }: TrainingViewProp
                   <div className="space-y-1">
                     <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Reward Model</p>
                     <p className="text-sm font-mono text-zinc-300 truncate max-w-[140px]" title={activeJob.config.rewardModel}>
-                      {activeJob.config.rewardModel || 'nexus-rm-v2'}
+                      {activeJob.config.rewardModel || 'bastion-rm-v2'}
                     </p>
                   </div>
                 </div>
@@ -1315,12 +1327,12 @@ ${activeJob.status === 'training' ? `[ACTIVE] Distributed sync over ${activeJob.
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Reference Reward Model</Label>
-                  <Select name="rewardModel" defaultValue="nexus-rm-v2">
+                  <Select name="rewardModel" defaultValue="bastion-rm-v2">
                     <SelectTrigger className="bg-zinc-950 border-zinc-800">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
-                      <SelectItem value="nexus-rm-v2">Nexus Reward-v2 (Standard)</SelectItem>
+                      <SelectItem value="bastion-rm-v2">Bastion Reward-v2 (Standard)</SelectItem>
                       <SelectItem value="hermes-judge">Hermes-7B Judge</SelectItem>
                       <SelectItem value="custom">Custom Pipeline Model</SelectItem>
                     </SelectContent>

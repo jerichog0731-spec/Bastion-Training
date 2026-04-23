@@ -277,6 +277,18 @@ export const PREBUILT_MODULES: AgentModule[] = [
     ]
   },
   {
+    id: 'numpy-engine',
+    type: 'action',
+    name: 'NumPy Engine',
+    description: 'Fundamental array processing and linear algebra for scratch neural networks.',
+    icon: 'Calculator',
+    config: { version: '1.24', precision: 'float64' },
+    schema: [
+      { id: 'version', label: 'NumPy Version', type: 'string' },
+      { id: 'precision', label: 'Default Precision', type: 'select', options: [{value: 'float64', label: 'Float64 (High)'}, {value: 'float32', label: 'Float32 (Standard)'}] }
+    ]
+  },
+  {
     id: 'edge-compiler',
     type: 'output',
     name: 'Edge Compiler',
@@ -657,10 +669,13 @@ import {
   Mic,
   Volume2,
   Download,
-  LayoutGrid
+  LayoutGrid,
+  Calculator
 } from 'lucide-react';
 
 export const CORE_AI_MODELS = [
+  { value: 'none', label: 'None / Initialize Later' },
+  { value: 'New neural network', label: 'New neural network (Start from Scratch)' },
   { value: 'Gemini 1.5 Flash', label: 'Gemini 1.5 Flash (Fast/Multi-modal)' },
   { value: 'Gemini 1.5 Pro', label: 'Gemini 1.5 Pro (Extreme Context)' },
   { value: 'Stable Diffusion', label: 'Stable Diffusion XL (Image Synth)' },
@@ -679,5 +694,6 @@ export const ICON_MAP: Record<string, any> = {
   Action: PlayCircle,
   Logic: Settings,
   Output: ArrowRightCircle,
-  Optimization: IterationCcw
+  Optimization: IterationCcw,
+  Calculator
 };

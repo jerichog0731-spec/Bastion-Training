@@ -189,8 +189,6 @@ async function startJupyterFallback() {
   jupyterProcess = trySpawn('jupyter-lab', args);
 }
 
-import fs from "fs";
-
 // Helper to parse HALT triggers from text_data.py
 function getHaltTriggers() {
   try {
@@ -243,12 +241,12 @@ async function startServer() {
     }
   });
 
-  // REAL Nexus Agent Kernel Execution Bridge
-  app.post("/api/nexus/execute", async (req, res) => {
+  // REAL Bastion Agent Kernel Execution Bridge
+  app.post("/api/bastion/execute", async (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ error: "No code provided" });
 
-    console.log(`[NEXUS KERNEL] Agent Sequence Triggered...`);
+    console.log(`[BASTION KERNEL] Agent Sequence Triggered...`);
     
     // We use python3 -c to execute the snippet
     const pythonProc = spawn('python3', ['-c', code]);
@@ -362,7 +360,7 @@ async function startServer() {
       services: {
         agent_builder: "online",
         neural_simulator: "online",
-        nexus_jupyter: jupyterProcess ? "running" : "failed",
+        bastion_jupyter: jupyterProcess ? "running" : "failed",
         jupyter_pid: jupyterProcess?.pid
       }
     });
@@ -384,7 +382,7 @@ async function startServer() {
   }
 
   const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Nexus Server running on http://localhost:${PORT}`);
+    console.log(`Bastion Server running on http://localhost:${PORT}`);
     console.log(`Health endpoint: http://localhost:${PORT}/api/health`);
   });
 
