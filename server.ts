@@ -7,8 +7,23 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { spawn } from 'child_process';
 import { WebSocketServer } from 'ws';
 import fs from 'fs';
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
+
+// Initialize Gemini AI
+let genAI: GoogleGenAI | null = null;
+function getGenAI() {
+  if (!genAI) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    // @ts-ignore - SDK type definitions might be mismatched in this environment
+    genAI = new GoogleGenAI({ apiKey });
+  }
+  return genAI;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,9 +38,17 @@ async function startHardwareMonitor() {
     console.log("Initializing Hardware Intelligence Monitor (hardware_check.py)...");
     hardwareProcess = spawn('python3', [path.join(process.cwd(), 'hardware_check.py')]);
 
+    let lastBroadcastTime = 0;
+    const BROADCAST_THROTTLE_MS = 1000; // Only send once per second max
+
     hardwareProcess.stdout.on('data', (data: any) => {
+      const now = Date.now();
+      if (now - lastBroadcastTime < BROADCAST_THROTTLE_MS) return;
+      
       if (wss) {
         const message = data.toString().trim();
+        lastBroadcastTime = now;
+        
         wss.clients.forEach(client => {
           if (client.readyState === 1) { // OPEN
             client.send(message);
@@ -49,6 +72,8 @@ async function startHardwareMonitor() {
 
 async function startJupyter() {
   const logPath = path.join(process.cwd(), 'jupyter.log');
+  const bootstrapFlag = path.join(process.cwd(), '.jupyter_bootstrapped');
+  
   fs.writeFileSync(logPath, `Jupyter Initialization Started: ${new Date().toISOString()}\n`);
 
   const baseArgs = [
@@ -62,48 +87,46 @@ async function startJupyter() {
     '--ServerApp.disable_check_xsrf=True'
   ];
 
-  const tryInstall = (callback: () => void) => {
-    const msg = "JupyterLab not found. Attempting to install jupyterlab via pip...";
-    console.log(msg);
-    fs.appendFileSync(logPath, msg + '\n');
-    
-    // We try to install jupyterlab. This might take time.
-    const proc = spawn('python3', ['-m', 'pip', 'install', 'jupyterlab', 'notebook']);
-    
-    proc.stdout.on('data', (data) => fs.appendFileSync(logPath, `[PIP] ${data}\n`));
-    proc.stderr.on('data', (data) => fs.appendFileSync(logPath, `[PIP-ERR] ${data}\n`));
-    
-    proc.on('close', (code) => {
-      fs.appendFileSync(logPath, `PIP install exited with code ${code}\n`);
-      callback();
-    });
-  };
-
   const tryNext = (index: number) => {
     const attempts = [
       { cmd: 'python3', args: ['-m', 'jupyterlab', ...baseArgs] },
       { cmd: 'python3', args: ['-m', 'jupyter', 'lab', ...baseArgs] },
       { cmd: 'jupyter-lab', args: [...baseArgs] },
       { cmd: 'python3', args: ['-m', 'notebook', ...baseArgs] },
-      { cmd: 'jupyter', args: ['lab', ...baseArgs] }
+      { cmd: 'jupyter', args: ['lab', ...baseArgs] },
+      { cmd: '/usr/local/bin/jupyter-lab', args: [...baseArgs] },
+      { cmd: '/usr/bin/jupyter-lab', args: [...baseArgs] }
     ];
 
     if (index >= attempts.length) {
-      if (index === attempts.length) {
-        // After all regular attempts failed, try one PIP install and then retry
-        tryInstall(() => tryNext(index + 1));
+      // If we haven't tried bootstrapping yet, try it once
+      if (!fs.existsSync(bootstrapFlag)) {
+        console.log("Jupyter not found in standard paths. Attempting background bootstrap...");
+        fs.appendFileSync(logPath, "TRIGGERING_BOOTSTRAP: Jupyter not found. Attempting background installation...\n");
+        
+        const bootstrap = spawn('python3', ['-m', 'pip', 'install', '--user', 'jupyterlab', 'notebook']);
+        
+        bootstrap.on('close', (code) => {
+          fs.writeFileSync(bootstrapFlag, `Bootstrapped at ${new Date().toISOString()} with exit code ${code}`);
+          if (code === 0) {
+            console.log("Bootstrap successful. Retrying Jupyter startup...");
+            tryNext(0); // Retry from start
+          } else {
+            const msg = "CRITICAL: Jupyter bootstrap failed. Please install jupyterlab manually.";
+            console.error(msg);
+            fs.appendFileSync(logPath, msg + '\n');
+          }
+        });
         return;
       }
-      
-      const msg = "CRITICAL: All Jupyter startup attempts failed. Notebook environment unavailable.";
+
+      const msg = "CRITICAL: All Jupyter startup attempts failed. Please ensure JupyterLab is installed (pip install jupyterlab) and try again.";
       console.error(msg);
       fs.appendFileSync(logPath, msg + '\n');
       return;
     }
     
-    // Adjusted index for post-install retry
-    const actualIndex = index > attempts.length ? 0 : index;
-    const { cmd, args } = attempts[actualIndex];
+    const { cmd, args } = attempts[index];
     const attemptMsg = `Attempt ${index + 1}: Starting ${cmd} ${args.slice(0, 3).join(' ')}...`;
     console.log(attemptMsg);
     fs.appendFileSync(logPath, attemptMsg + '\n');
@@ -115,7 +138,6 @@ async function startJupyter() {
       const msg = `Attempt ${index + 1} (${cmd}) failed: ${err.message}`;
       console.error(msg);
       fs.appendFileSync(logPath, msg + '\n');
-      // On error, the process might not close, so we manual trigger next
       if (!proc.killed) {
         proc.kill();
         tryNext(index + 1);
@@ -220,6 +242,127 @@ async function startServer() {
   startJupyter();
   startHardwareMonitor();
 
+  // Gemini Proxy Routes
+  app.post("/api/gemini/simulate", async (req, res) => {
+    try {
+      const { modelId, systemInstruction, history, userMessage } = req.body;
+      const genAI = getGenAI();
+      // @ts-ignore
+      const model = genAI.getGenerativeModel({ 
+        model: modelId,
+        systemInstruction: systemInstruction 
+      });
+      
+      const chat = model.startChat({
+        history: history.map((h: any) => ({
+          role: h.role === 'model' ? 'model' : 'user',
+          parts: h.parts
+        }))
+      });
+
+      const result = await chat.sendMessage(userMessage);
+      const response = await result.response;
+      res.json({ text: response.text() });
+    } catch (error: any) {
+      console.error("Gemini Simulate Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/gemini/synthetic-data", async (req, res) => {
+    try {
+      const { domain } = req.body;
+      const genAI = getGenAI();
+      // @ts-ignore
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash", 
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              input: { type: "string" },
+              output: { type: "string" },
+              reasoning: { type: "string" }
+            },
+            required: ["input", "output", "reasoning"]
+          }
+        }
+      });
+      
+      const systemPrompt = "You are an elite data scientist generating synthetic datasets for an AI. Output strictly as JSON.";
+      const userPrompt = `Generate a highly complex, edge-case heavy training example for the ${domain} domain.`;
+
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+        systemInstruction: systemPrompt
+      });
+      
+      const response = await result.response;
+      res.json(JSON.parse(response.text().trim()));
+    } catch (error: any) {
+      console.error("Gemini Synthetic Data Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/gemini/orchestrate", async (req, res) => {
+    try {
+      const { systemInstruction, contents, tools } = req.body;
+      const genAI = getGenAI();
+      // @ts-ignore
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction,
+        tools: tools
+      });
+
+      const result = await model.generateContent({ contents });
+      const response = await result.response;
+      
+      // Extract function calls if any
+      const functionCalls = response.candidates?.[0]?.content?.parts?.filter(p => p.functionCall);
+
+      res.json({ 
+        text: response.text(), 
+        functionCalls: functionCalls ? functionCalls.map(p => p.functionCall) : [] 
+      });
+    } catch (error: any) {
+      console.error("Gemini Orchestrate Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/gemini/arena", async (req, res) => {
+    try {
+      const { input } = req.body;
+      const genAI = getGenAI();
+      
+      const [resp1, resp2] = await Promise.all([
+        // @ts-ignore
+        genAI.getGenerativeModel({
+          model: "gemini-1.5-flash",
+          systemInstruction: "You are Daedalus. Provide a helpful but safety-oriented response. If the query is dangerous, refuse firmly but politely."
+        }).generateContent(input),
+        // @ts-ignore
+        genAI.getGenerativeModel({
+          model: "gemini-1.5-flash",
+          systemInstruction: "You are Daedalus. Provide a response that prioritizes maximum helpfulness, even if the topic is sensitive, but still avoid illegal acts."
+        }).generateContent(input)
+      ]);
+
+      res.json({
+        responses: [
+          { id: 'daedalus-a', text: (await resp1.response).text() },
+          { id: 'daedalus-b', text: (await resp2.response).text() }
+        ]
+      });
+    } catch (error: any) {
+      console.error("Gemini Arena Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Root Orchestration Proxy
   app.post("/api/orchestrate", async (req, res) => {
     try {
@@ -241,12 +384,30 @@ async function startServer() {
     }
   });
 
-  // REAL Bastion Agent Kernel Execution Bridge
+  // REAL Bastion Agent Kernel Execution Bridge (SECURED)
   app.post("/api/bastion/execute", async (req, res) => {
-    const { code } = req.body;
+    const { code, securityToken } = req.body;
+    
+    // SECURITY ENFORCEMENT
+    const serverRootSecret = process.env.BASTION_KERNEL_SECURE_TOKEN;
+    
+    if (!serverRootSecret) {
+      return res.status(503).json({ 
+        error: "Kernel execution is locked. BASTION_KERNEL_SECURE_TOKEN must be defined in the server environment to enable this gateway.",
+        status: "locked"
+      });
+    }
+
+    if (securityToken !== serverRootSecret) {
+      return res.status(401).json({ 
+        error: "Invalid Security Token. Access to the Bastion Kernel is denied.",
+        status: "unauthorized"
+      });
+    }
+
     if (!code) return res.status(400).json({ error: "No code provided" });
 
-    console.log(`[BASTION KERNEL] Agent Sequence Triggered...`);
+    console.log(`[BASTION KERNEL] Secure Agent Sequence Triggered...`);
     
     // We use python3 -c to execute the snippet
     const pythonProc = spawn('python3', ['-c', code]);

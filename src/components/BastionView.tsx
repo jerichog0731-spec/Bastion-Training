@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { BastionLogo } from './BastionLogo';
@@ -18,7 +19,14 @@ export default function BastionView() {
   const [code, setCode] = React.useState('import os\nprint(f"Current Directory: {os.getcwd()}")\n\n# Neural Network simulation\nimport random\nweights = [random.random() for _ in range(5)]\nprint(f"Initial Neural Weights: {weights}")');
   const [output, setOutput] = React.useState('');
   const [isExecuting, setIsExecuting] = React.useState(false);
+  const [securityToken, setSecurityToken] = React.useState(localStorage.getItem('bastion_secure_token') || '');
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (securityToken) {
+      localStorage.setItem('bastion_secure_token', securityToken);
+    }
+  }, [securityToken]);
 
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -27,13 +35,17 @@ export default function BastionView() {
   }, [executionLog]);
 
   const handleRunCode = async () => {
+    if (!securityToken) {
+      toast.error("Security Token Required", { description: "Please enter your Bastion Secure Token in the panel side." });
+      return;
+    }
     setIsExecuting(true);
-    setOutput('> Initializing sequence...\n');
+    setOutput('> Initializing secure sequence...\n');
     try {
       const response = await fetch('/api/bastion/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ code, securityToken })
       });
       const data = await response.json();
       if (data.status === 'success') {
@@ -41,7 +53,7 @@ export default function BastionView() {
         toast.success("Kernel operation successful");
       } else {
         setOutput(`Error: ${data.error || 'Unknown failure'}\nExit Code: ${data.exitCode}`);
-        toast.error("Execution failure");
+        toast.error(data.status === 'unauthorized' ? "Access Denied" : "Execution failure");
       }
     } catch (error) {
       toast.error("Kernel bridge fault");
@@ -53,6 +65,10 @@ export default function BastionView() {
 
   const handleAgentExecute = async () => {
     if (!agentCommand.trim()) return;
+    if (!securityToken) {
+      toast.error("Security Token Required");
+      return;
+    }
     
     setIsAgentHandling(true);
     const userCmd = agentCommand;
@@ -66,7 +82,7 @@ export default function BastionView() {
       const response = await fetch('/api/bastion/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: wrappedCode })
+        body: JSON.stringify({ code: wrappedCode, securityToken })
       });
       const data = await response.json();
       
@@ -152,7 +168,22 @@ export default function BastionView() {
             <CardDescription className="text-[10px]">Delegate kernel operations to autonomous agents.</CardDescription>
           </CardHeader>
           
-          <CardContent className="flex-1 flex flex-col p-4 space-y-4 overflow-hidden">
+          <CardContent className="flex-1 flex-col p-4 space-y-4 overflow-hidden hidden md:flex">
+            <div className="space-y-2 pb-4 border-b border-zinc-800">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] uppercase font-black text-zinc-500 tracking-[0.2em]">Security Bridge</Label>
+                <ShieldAlert className={cn("w-3 h-3", securityToken ? "text-emerald-500" : "text-rose-500 animate-pulse")} />
+              </div>
+              <Input 
+                type="password"
+                placeholder="Enter Secure Kernel Token..."
+                value={securityToken}
+                onChange={(e) => setSecurityToken(e.target.value)}
+                className="bg-black border-zinc-800 h-8 text-[10px] focus:ring-orange-500/20"
+              />
+              {!securityToken && <p className="text-[9px] text-rose-500/60 leading-tight">Terminal is currently locked. Provide BASTION_KERNEL_SECURE_TOKEN to authorize execution.</p>}
+            </div>
+
             <ScrollArea className="flex-1 -mx-2 px-2" scrollViewportRef={scrollRef}>
               <div className="space-y-3">
                 {executionLog.length === 0 ? (

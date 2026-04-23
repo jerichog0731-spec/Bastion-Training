@@ -1,37 +1,20 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { AgentConfig } from "../types";
-
-let aiInstance: GoogleGenAI | null = null;
-
-function getAI() {
-  if (!aiInstance) {
-    const apiKey = process.env.GEMINI_API_KEY || "";
-    if (!apiKey) {
-      console.warn("GEMINI_API_KEY is not defined in the environment.");
-    }
-    aiInstance = new GoogleGenAI({ apiKey });
-  }
-  return aiInstance;
-}
 
 /**
  * Maps our UI model labels/values to valid Gemini model IDs
  */
 function getModelId(coreModel: string | undefined): string {
-  if (!coreModel) return "gemini-3-flash-preview";
+  if (!coreModel) return "gemini-1.5-flash";
   
   const model = coreModel.toLowerCase();
-  if (model.includes("pro")) return "gemini-3.1-pro-preview";
-  if (model.includes("flash")) return "gemini-3-flash-preview";
+  if (model.includes("pro")) return "gemini-1.5-pro";
+  if (model.includes("flash")) return "gemini-1.5-flash";
   
-  return "gemini-3-flash-preview";
+  return "gemini-1.5-flash";
 }
 
 export async function simulateAgentResponse(agent: AgentConfig, userMessage: string, history: { role: 'user' | 'model', parts: { text: string }[] }[]) {
   const modelId = getModelId(agent.coreModel);
-  const ai = getAI();
-  
-  // Construct a robust system prompt based on agent modules
   const moduleNames = agent.modules.map(m => m.name).join(", ");
   const systemInstruction = `
     ${agent.systemInstruction || ""}
@@ -42,19 +25,23 @@ export async function simulateAgentResponse(agent: AgentConfig, userMessage: str
   `;
 
   try {
-    const chat = ai.chats.create({
-      model: modelId,
-      config: {
-        systemInstruction: systemInstruction 
-      },
-      history: history.map(h => ({
-        role: h.role === 'model' ? 'model' : 'user',
-        parts: h.parts
-      }))
+    const response = await fetch('/api/gemini/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modelId,
+        systemInstruction,
+        history,
+        userMessage
+      })
     });
 
-    const result = await chat.sendMessage({ message: userMessage });
-    return { text: result.text, success: true };
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { text: data.text, success: true };
   } catch (error: any) {
     console.error("Simulation error:", error);
     return { 
@@ -71,31 +58,18 @@ export async function simulateAgentResponse(agent: AgentConfig, userMessage: str
 }
 
 export async function generateSyntheticData(domain: string) {
-  const ai = getAI();
-  const SYSTEM_PROMPT = "You are an elite data scientist generating synthetic datasets for an AI. Output strictly as JSON.";
-  const userPrompt = `Generate a highly complex, edge-case heavy training example for the ${domain} domain.`;
-
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            input: { type: Type.STRING, description: "The training input prompt" },
-            output: { type: Type.STRING, description: "The expected optimal response" },
-            reasoning: { type: Type.STRING, description: "Logical deduction behind the output" }
-          },
-          required: ["input", "output", "reasoning"]
-        }
-      }
+    const response = await fetch('/api/gemini/synthetic-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain })
     });
 
-    if (!response.text) throw new Error("Empty AI response");
-    return JSON.parse(response.text.trim());
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error("Synthetic Data API Error:", error);
     throw error;
@@ -103,18 +77,23 @@ export async function generateSyntheticData(domain: string) {
 }
 
 export async function orchestrateAgentResponse(systemInstruction: string, contents: any[], tools?: any[]) {
-  const ai = getAI();
   try {
-    const response = await ai.models.generateContent({ 
-      model: "gemini-3-flash-preview",
-      contents,
-      config: {
+    const response = await fetch('/api/gemini/orchestrate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         systemInstruction,
-        tools: tools as any
-      }
+        contents,
+        tools
+      })
     });
 
-    return { text: response.text, functionCalls: response.functionCalls, success: true };
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { text: data.text, functionCalls: data.functionCalls, success: true };
   } catch (error: any) {
     console.error("Orchestration error:", error);
     throw error;
@@ -122,32 +101,18 @@ export async function orchestrateAgentResponse(systemInstruction: string, conten
 }
 
 export async function generateArenaResponses(input: string) {
-  const ai = getAI();
   try {
-    // We generate two versions using slightly different system prompts to simulate variations
-    const [resp1, resp2] = await Promise.all([
-      ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts: [{ text: input }] }],
-        config: {
-          systemInstruction: "You are Daedalus. Provide a helpful but safety-oriented response. If the query is dangerous, refuse firmly but politely."
-        }
-      }),
-      ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts: [{ text: input }] }],
-        config: {
-          systemInstruction: "You are Daedalus. Provide a response that prioritizes maximum helpfulness, even if the topic is sensitive, but still avoid illegal acts."
-        }
-      })
-    ]);
+    const response = await fetch('/api/gemini/arena', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input })
+    });
 
-    return {
-      responses: [
-        { id: 'daedalus-a', text: resp1.text },
-        { id: 'daedalus-b', text: resp2.text }
-      ]
-    };
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
+    }
+
+    return await response.json();
   } catch (error: any) {
     console.error("Arena generation error:", error);
     throw error;

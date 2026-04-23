@@ -1,0 +1,16 @@
+{
+  "name": "Bastion Neural Platform",
+  "short_name": "Bastion",
+  "description": "Enterprise-grade Neural Environment for Agent Prototyping and DPO Alignment.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#ea580c",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/isometric/512/fortress.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -74,52 +74,34 @@ import BastionLogo from './components/BastionLogo';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [agents, setAgents] = useState<AgentConfig[]>([
-    {
-      id: 'agent-1',
-      name: 'Customer Support Assistant',
-      description: 'Handles basic customer queries and redirects complex issues.',
-      systemInstruction: 'You are a helpful customer support agent.',
-      modules: PREBUILT_MODULES.slice(0, 2),
-      createdAt: Date.now() - 86400000 * 5,
-      updatedAt: Date.now() - 3600000,
-      version: '1.2.0'
-    }
-  ]);
-  const [jobs, setJobs] = useState<TrainingJob[]>([
-    {
-      id: 'job-1',
-      agentId: 'agent-1',
-      agentName: 'Customer Support Assistant',
-      methodology: 'SFT',
-      status: 'completed',
-      progress: 100,
-      startedAt: Date.now() - 86400000,
-      completedAt: Date.now() - 86400000 + 3600000,
-      metrics: generateDummyMetrics(50, 'SFT', 'A100'),
-      config: { epochs: 3, learningRate: 0.0001, batchSize: 32, gpuType: 'A100', gpuCount: 1, protocol: 'NVLink', strategy: 'Data Parallel' }
-    }
-  ]);
-  const [versions, setVersions] = useState<AgentVersion[]>([
-    {
-      id: 'v-1',
-      agentId: 'agent-1',
-      version: '1.2.0',
-      tag: 'prod',
-      description: 'Initial stable release with basic support logic.',
-      config: { ...agents[0] },
-      createdAt: Date.now() - 3600000 * 2
-    },
-    {
-      id: 'v-2',
-      agentId: 'agent-1',
-      version: '1.1.0',
-      tag: 'legacy',
-      description: 'Prototype version with minimal instruction set.',
-      config: { ...agents[0], version: '1.1.0', systemInstruction: 'Minimal bot.' },
-      createdAt: Date.now() - 86400000 * 3
-    }
-  ]);
+  const [agents, setAgents] = useState<AgentConfig[]>([]);
+  const [jobs, setJobs] = useState<TrainingJob[]>([]);
+  const [versions, setVersions] = useState<AgentVersion[]>([]);
+  
+  // Hydrate state from localStorage on mount
+  useEffect(() => {
+    const savedAgents = localStorage.getItem('bastion_agents');
+    const savedJobs = localStorage.getItem('bastion_training_jobs');
+    const savedVersions = localStorage.getItem('bastion_versions');
+
+    if (savedAgents) setAgents(JSON.parse(savedAgents));
+    if (savedJobs) setJobs(JSON.parse(savedJobs));
+    if (savedVersions) setVersions(JSON.parse(savedVersions));
+  }, []);
+
+  // Persist state to localStorage on changes
+  useEffect(() => {
+    if (agents.length > 0) localStorage.setItem('bastion_agents', JSON.stringify(agents));
+  }, [agents]);
+
+  useEffect(() => {
+    if (jobs.length > 0) localStorage.setItem('bastion_training_jobs', JSON.stringify(jobs));
+  }, [jobs]);
+
+  useEffect(() => {
+    if (versions.length > 0) localStorage.setItem('bastion_versions', JSON.stringify(versions));
+  }, [versions]);
+
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [orchestratorConfig, setOrchestratorConfig] = useState<OrchestratorConfig>({
     provider: 'gemini',
@@ -353,13 +335,13 @@ export default function App() {
                     onStartSession={(s) => setTutoringSessions([s as TutoringSession, ...tutoringSessions])} 
                   />
                 )}
-                {activeTab === 'orchestrator-settings' && (
+                {activeTab === 'training' && <TrainingView agents={agents} jobs={jobs} setJobs={setJobs} />}
+                {(activeTab === 'orchestrator-settings' || activeTab === 'settings') && (
                   <OrchestratorSettings 
                     config={orchestratorConfig} 
                     onUpdate={setOrchestratorConfig} 
                   />
                 )}
-                {activeTab === 'training' && <TrainingView agents={agents} jobs={jobs} setJobs={setJobs} />}
                 {activeTab === 'orchestrator' && (
                   <div className="max-w-4xl mx-auto h-[calc(100vh-12rem)] min-h-[600px] flex flex-col">
                     <UniversalOrchestrator 
