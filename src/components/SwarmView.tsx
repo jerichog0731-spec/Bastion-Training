@@ -28,7 +28,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { orchestrateAgentResponse } from '../services/geminiService';
+import { orchestrateAgentResponse } from '../services/aiService';
 
 interface LogEntry {
   id: string;

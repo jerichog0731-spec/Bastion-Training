@@ -48,9 +48,9 @@ export default function OrchestratorSettings({
   const handleTestConnection = async () => {
     setTestStatus('testing');
     setTimeout(() => {
-      if (config.provider === 'gemini') {
+      if (config.provider === 'local-bastion-core') {
         setTestStatus('success');
-        toast.success("Gemini Cluster Online");
+        toast.success("Local Bastion Core Online");
       } else if (config.endpoint) {
         setTestStatus('success');
         toast.success(`Connected to Proprietary Node: ${config.modelName}`);
@@ -92,12 +92,12 @@ export default function OrchestratorSettings({
           <CardContent className="p-0">
             <ScrollArea className="h-[500px] px-6 pb-6">
               <div className="space-y-4">
-                {(['gemini', 'custom-proprietary', 'local-hosted', 'desktop-mode', 'custom-model-vault'] as (OrchestratorProvider | 'desktop-mode')[]).map((p) => {
+                {(['local-bastion-core', 'custom-proprietary', 'local-hosted', 'desktop-mode', 'custom-model-vault'] as (OrchestratorProvider | 'desktop-mode')[]).map((p) => {
                   const isTabActive = 
                     (p === 'desktop-mode' && activeTab === 'desktop') ||
                     (p === 'custom-model-vault' && activeTab === 'vault') ||
                     (p === 'custom-proprietary' && activeTab === 'custom-proprietary') ||
-                    (p === 'gemini' && activeTab === 'gemini') ||
+                    (p === 'local-bastion-core' && activeTab === 'local-bastion-core') ||
                     (p === 'local-hosted' && activeTab === 'local-hosted');
 
                   return (
@@ -119,7 +119,7 @@ export default function OrchestratorSettings({
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        {p === 'gemini' ? <Globe className="w-4 h-4" /> : 
+                        {p === 'local-bastion-core' ? <Globe className="w-4 h-4" /> : 
                          p === 'local-hosted' ? <Server className="w-4 h-4" /> : 
                          p === 'desktop-mode' ? <Monitor className="w-4 h-4" /> :
                          p === 'custom-model-vault' ? <BrainCircuit className="w-4 h-4" /> :
@@ -164,7 +164,7 @@ export default function OrchestratorSettings({
             >
               <ScrollArea className="w-full" orientation="horizontal">
                 <TabsList className="bg-black border-zinc-800 inline-flex w-max min-w-full">
-                  <TabsTrigger value="gemini" className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">Cloud</TabsTrigger>
+                  <TabsTrigger value="local-bastion-core" className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">Local Core</TabsTrigger>
                   <TabsTrigger value="custom-proprietary" className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">Custom</TabsTrigger>
                   <TabsTrigger value="local-hosted" className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">Local Cluster</TabsTrigger>
                   <TabsTrigger value="desktop" className="text-[10px] uppercase font-bold tracking-widest text-orange-500 whitespace-nowrap">Standalone App</TabsTrigger>
@@ -172,17 +172,17 @@ export default function OrchestratorSettings({
                 </TabsList>
               </ScrollArea>
 
-              <TabsContent value="gemini" className="pt-4">
+              <TabsContent value="local-bastion-core" className="pt-4">
                 <div className="p-8 text-center space-y-4 border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/50">
-                  <Globe className="w-12 h-12 mx-auto text-orange-500/20" />
+                  <Shield className="w-12 h-12 mx-auto text-orange-500/20" />
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-zinc-200">Gemini Cloud Native</p>
+                    <p className="text-sm font-medium text-zinc-200">Local Bastion Core</p>
                     <p className="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed">
-                      Default cluster orchestration provided by Google AI. All neural routes are encrypted and processed in-region.
+                      Zero-cloud architecture. All neural synthesis is performed on local hardware or simulated on the server without external API calls.
                     </p>
                   </div>
                   <Button variant="outline" className="h-8 text-[10px] uppercase font-bold" onClick={handleTestConnection}>
-                    Test Cloud Handshake
+                    Diagnostic Link Test
                   </Button>
                 </div>
               </TabsContent>

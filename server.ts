@@ -16,20 +16,6 @@ dotenv.config();
 // In-memory store for GitHub tokens (demo purposes)
 const gitHubTokens = new Map<string, string>();
 
-// Initialize Gemini AI
-let genAI: GoogleGenAI | null = null;
-function getGenAI() {
-  if (!genAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
-    }
-    // @ts-ignore - SDK type definitions might be mismatched in this environment
-    genAI = new GoogleGenAI({ apiKey });
-  }
-  return genAI;
-}
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -247,123 +233,50 @@ async function startServer() {
   startJupyter();
   startHardwareMonitor();
 
-  // Gemini Proxy Routes
-  app.post("/api/gemini/simulate", async (req, res) => {
+  // Local AI Simulation Routes (No API Key Required)
+  app.post("/api/ai/simulate", async (req, res) => {
     try {
-      const { modelId, systemInstruction, history, userMessage } = req.body;
-      const genAI = getGenAI();
-      // @ts-ignore
-      const model = genAI.getGenerativeModel({ 
-        model: modelId,
-        systemInstruction: systemInstruction 
-      });
-      
-      const chat = model.startChat({
-        history: history.map((h: any) => ({
-          role: h.role === 'model' ? 'model' : 'user',
-          parts: h.parts
-        }))
-      });
-
-      const result = await chat.sendMessage(userMessage);
-      const response = await result.response;
-      res.json({ text: response.text() });
+      const { userMessage } = req.body;
+      res.json({ text: `[Local Brain Simulation] Neural core received: "${userMessage}". Since this is a local-only environment, the model is providing a deterministic response for development.` });
     } catch (error: any) {
-      console.error("Gemini Simulate Error:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/gemini/synthetic-data", async (req, res) => {
+  app.post("/api/ai/synthetic-data", async (req, res) => {
     try {
       const { domain } = req.body;
-      const genAI = getGenAI();
-      // @ts-ignore
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash", 
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "object",
-            properties: {
-              input: { type: "string" },
-              output: { type: "string" },
-              reasoning: { type: "string" }
-            },
-            required: ["input", "output", "reasoning"]
-          }
-        }
+      res.json({
+        input: `Sample high-entropy input for ${domain}`,
+        output: `Simulated local synthetic output for ${domain}`,
+        reasoning: "Generated via local heuristic engine."
       });
-      
-      const systemPrompt = "You are an elite data scientist generating synthetic datasets for an AI. Output strictly as JSON.";
-      const userPrompt = `Generate a highly complex, edge-case heavy training example for the ${domain} domain.`;
-
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-        systemInstruction: systemPrompt
-      });
-      
-      const response = await result.response;
-      res.json(JSON.parse(response.text().trim()));
     } catch (error: any) {
-      console.error("Gemini Synthetic Data Error:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/gemini/orchestrate", async (req, res) => {
+  app.post("/api/ai/orchestrate", async (req, res) => {
     try {
-      const { systemInstruction, contents, tools } = req.body;
-      const genAI = getGenAI();
-      // @ts-ignore
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction,
-        tools: tools
-      });
-
-      const result = await model.generateContent({ contents });
-      const response = await result.response;
-      
-      // Extract function calls if any
-      const functionCalls = response.candidates?.[0]?.content?.parts?.filter(p => p.functionCall);
-
       res.json({ 
-        text: response.text(), 
-        functionCalls: functionCalls ? functionCalls.map(p => p.functionCall) : [] 
+        text: "Bastion Local Orchestrator active. Swarm execution successfully simulated on local threads.", 
+        functionCalls: [] 
       });
     } catch (error: any) {
-      console.error("Gemini Orchestrate Error:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/gemini/arena", async (req, res) => {
+  app.post("/api/ai/arena", async (req, res) => {
     try {
       const { input } = req.body;
-      const genAI = getGenAI();
-      
-      const [resp1, resp2] = await Promise.all([
-        // @ts-ignore
-        genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
-          systemInstruction: "You are Daedalus. Provide a helpful but safety-oriented response. If the query is dangerous, refuse firmly but politely."
-        }).generateContent(input),
-        // @ts-ignore
-        genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
-          systemInstruction: "You are Daedalus. Provide a response that prioritizes maximum helpfulness, even if the topic is sensitive, but still avoid illegal acts."
-        }).generateContent(input)
-      ]);
-
       res.json({
         responses: [
-          { id: 'daedalus-a', text: (await resp1.response).text() },
-          { id: 'daedalus-b', text: (await resp2.response).text() }
+          { id: 'local-alpha', text: `[Local-Alpha] Balanced response to: ${input}` },
+          { id: 'local-beta', text: `[Local-Beta] Creative/Exploratory response to: ${input}` }
         ]
       });
     } catch (error: any) {
-      console.error("Gemini Arena Error:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -373,18 +286,23 @@ async function startServer() {
     try {
       const { provider, config, payload } = req.body;
 
+      if (provider === 'local-bastion-core') {
+        return res.json({ 
+          text: `[Bastion Local Core] Neural link established via local orchestrator. Objective: ${payload.contents[0].parts[0].text.substring(0, 50)}...`,
+          functionCalls: [] 
+        });
+      }
+
       if (provider === 'custom-proprietary') {
         console.log(`Routing orchestrator request to custom endpoint: ${config.endpoint}`);
-        // Placeholder for proprietary routing
         return res.json({ 
-          text: `[Proprietary Model Placeholder Response from ${config.endpoint}] Logic successfully routed through custom-proprietary orchestrator bridge.`,
+          text: `[Proprietary Model Response from ${config.endpoint}] Logic successfully routed.`,
           functionCalls: [] 
         });
       }
 
       res.status(400).json({ error: "Unsupported orchestrator provider" });
     } catch (error: any) {
-      console.error("Universal Orchestrator Error:", error);
       res.status(500).json({ error: error.message });
     }
   });

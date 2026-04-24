@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { orchestrateAgentResponse } from '../services/geminiService';
+import { orchestrateAgentResponse } from '../services/aiService';
 import { toast } from 'sonner';
 import { OrchestratorConfig } from '../types';
 
@@ -95,7 +95,7 @@ export default function FloatingOrchestrator({ config }: { config: OrchestratorC
       
       let responseText = "";
       
-      if (config.provider === 'gemini') {
+      if (config.provider === 'local-bastion-core') {
         const res = await orchestrateAgentResponse(
           systemInstruction,
           [{ role: 'user', parts: [{ text: userMessageContent }] }]

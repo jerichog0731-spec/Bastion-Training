@@ -21,7 +21,7 @@ export interface AgentModule {
   dependencies?: string[]; // IDs of modules this module depends on
 }
 
-export type OrchestratorProvider = 'gemini' | 'custom-proprietary' | 'local-hosted' | 'custom-model-vault';
+export type OrchestratorProvider = 'local-bastion-core' | 'custom-proprietary' | 'local-hosted' | 'custom-model-vault';
 
 export interface CustomModel {
   id: string;

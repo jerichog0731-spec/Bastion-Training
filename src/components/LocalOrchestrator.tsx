@@ -21,9 +21,9 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { AgentConfig, AgentModule, TrainingJob } from '../types';
 
-import { orchestrateAgentResponse } from '../services/geminiService';
+import { orchestrateAgentResponse } from '../services/aiService';
 
-interface GeminiOrchestratorProps {
+interface LocalOrchestratorProps {
   agents: AgentConfig[];
   onUpdateAgent: (agentId: string, updates: Partial<AgentConfig>) => void;
   onStartTraining: (agentId: string, config: any) => void;
@@ -35,7 +35,7 @@ interface Message {
   isAction?: boolean;
 }
 
-export function GeminiOrchestrator({ agents, onUpdateAgent, onStartTraining }: GeminiOrchestratorProps) {
+export function LocalOrchestrator({ agents, onUpdateAgent, onStartTraining }: LocalOrchestratorProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', text: "Systems online. I am the Bastion Architect. I can help you design neural pipelines, configure specific module parameters, and optimize your agent's execution flow. What are we building today?" }
   ]);
@@ -159,7 +159,7 @@ export function GeminiOrchestrator({ agents, onUpdateAgent, onStartTraining }: G
               text: "Architecture Proposal Generated. Review the components in the Builder tab.",
               isAction: true 
             }]);
-            toast.info("Proposed architecture received from Gemini");
+            toast.info("Proposed architecture received from Local Core");
           }
         }
       }
@@ -181,7 +181,7 @@ export function GeminiOrchestrator({ agents, onUpdateAgent, onStartTraining }: G
               <BrainCircuit className="w-6 h-6" />
             </div>
             <div>
-              <CardTitle className="text-lg">Gemini Orchestrator</CardTitle>
+              <CardTitle className="text-lg">Local Architect</CardTitle>
               <CardDescription className="text-xs">Neural Network Synthesis & Training Commander</CardDescription>
             </div>
           </div>

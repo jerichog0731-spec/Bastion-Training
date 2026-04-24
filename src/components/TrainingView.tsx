@@ -86,7 +86,7 @@ import {
 import { TrainingJob, TrainingMethodology, AgentConfig, TrainingMetric, GPUType, CustomModel } from '../types';
 import { toast } from 'sonner';
 
-import { generateArenaResponses, orchestrateAgentResponse, generateSyntheticData } from '../services/geminiService';
+import { generateArenaResponses, orchestrateAgentResponse, generateSyntheticData } from '../services/aiService';
 
 interface TrainingViewProps {
   agents: AgentConfig[];

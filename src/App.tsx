@@ -159,8 +159,8 @@ export default function App() {
 
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [orchestratorConfig, setOrchestratorConfig] = useState<OrchestratorConfig>({
-    provider: 'gemini',
-    modelName: 'gemini-1.5-flash',
+    provider: 'local-bastion-core',
+    modelName: 'Local Bastion Core',
     parameters: {}
   });
   const [tutoringSessions, setTutoringSessions] = useState<TutoringSession[]>([]);
@@ -193,7 +193,7 @@ export default function App() {
     setNewAgentMetadata({ 
       name: '', 
       description: '', 
-      coreModel: 'Gemini 1.5 Flash',
+      coreModel: 'Local Bastion Core',
       systemInstruction: 'You are an autonomous agent designed to solve complex tasks using neural modules.' 
     });
     setActiveTab('builder');

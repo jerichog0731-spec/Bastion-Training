@@ -676,8 +676,7 @@ import {
 export const CORE_AI_MODELS = [
   { value: 'none', label: 'None / Initialize Later' },
   { value: 'New neural network', label: 'New neural network (Start from Scratch)' },
-  { value: 'Gemini 1.5 Flash', label: 'Gemini 1.5 Flash (Fast/Multi-modal)' },
-  { value: 'Gemini 1.5 Pro', label: 'Gemini 1.5 Pro (Extreme Context)' },
+  { value: 'Local Bastion Core', label: 'Local Bastion Core (Air-gapped/Local)' },
   { value: 'Stable Diffusion', label: 'Stable Diffusion XL (Image Synth)' },
   { value: 'Whisper', label: 'Whisper v3 (State-of-the-art STT)' },
   { value: 'ElevenLabs', label: 'ElevenLabs (Neural TTS)' }

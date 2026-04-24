@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AgentConfig } from '../types';
-import { simulateAgentResponse } from '../services/geminiService';
+import { simulateAgentResponse } from '../services/aiService';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';

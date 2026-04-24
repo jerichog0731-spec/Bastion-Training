@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { AgentConfig, AgentModule, TrainingJob, OrchestratorConfig } from '../types';
 
-import { orchestrateAgentResponse } from '../services/geminiService';
+import { orchestrateAgentResponse } from '../services/aiService';
 
 interface UniversalOrchestratorProps {
   agents: AgentConfig[];
@@ -39,7 +39,7 @@ interface Message {
 
 export function UniversalOrchestrator({ agents, orchestratorConfig, onUpdateAgent, onStartTraining }: UniversalOrchestratorProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: `Neural Bastion active. Routing through ${orchestratorConfig.provider === 'gemini' ? 'Gemini Cluster' : orchestratorConfig.modelName}. I am your unified neural architect.` }
+    { role: 'model', text: `Neural Bastion active. Routing through ${orchestratorConfig.provider === 'local-bastion-core' ? 'Local Core' : orchestratorConfig.modelName}. I am your unified neural architect.` }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +84,7 @@ export function UniversalOrchestrator({ agents, orchestratorConfig, onUpdateAgen
         }
       ];
 
-      if (orchestratorConfig.provider === 'gemini') {
+      if (orchestratorConfig.provider === 'local-bastion-core') {
         const contents = [
           ...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
           { role: 'user', parts: [{ text: userMessage }] }
@@ -148,12 +148,12 @@ export function UniversalOrchestrator({ agents, orchestratorConfig, onUpdateAgen
           <div className="flex items-center gap-3">
             <div className={cn(
               "w-10 h-10 rounded-xl flex items-center justify-center border transition-colors",
-              orchestratorConfig.provider === 'gemini' ? "bg-orange-600/10 text-orange-500 border-orange-500/20" : "bg-emerald-600/10 text-emerald-500 border-emerald-500/20"
+              orchestratorConfig.provider === 'local-bastion-core' ? "bg-orange-600/10 text-orange-500 border-orange-500/20" : "bg-emerald-600/10 text-emerald-500 border-emerald-500/20"
             )}>
               <Cpu className="w-6 h-6" />
             </div>
             <div>
-              <CardTitle className="text-lg">{orchestratorConfig.provider === 'gemini' ? 'Gemini Orchestrator' : 'Proprietary Brain'}</CardTitle>
+              <CardTitle className="text-lg">{orchestratorConfig.provider === 'local-bastion-core' ? 'Local Architect' : 'Custom Brain'}</CardTitle>
               <CardDescription className="text-xs uppercase tracking-widest font-bold opacity-50">{orchestratorConfig.modelName}</CardDescription>
             </div>
           </div>

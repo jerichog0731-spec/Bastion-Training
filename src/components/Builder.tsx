@@ -50,7 +50,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ModuleProperties } from './ModuleProperties';
-import { GeminiOrchestrator } from './GeminiOrchestrator';
+import { LocalOrchestrator } from './LocalOrchestrator';
 import { ConnectionLayer } from './ConnectionLayer';
 import {
   Dialog,
@@ -149,7 +149,7 @@ function CanvasDroppable({ children, isDragging }: { children: React.ReactNode, 
 
 export default function Builder({ agent, onUpdate }: BuilderProps) {
   const [activeModules, setActiveModules] = useState<AgentModule[]>(agent?.modules || []);
-  const [coreModel, setCoreModel] = useState(agent?.coreModel || 'Gemini 1.5 Flash');
+  const [coreModel, setCoreModel] = useState(agent?.coreModel || 'Local Bastion Core');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -442,7 +442,7 @@ export default function Builder({ agent, onUpdate }: BuilderProps) {
                 onClick={() => setIsChatOpen(!isChatOpen)}
               >
                 <BrainCircuit className="w-3.5 h-3.5 mr-1.5" />
-                Ask Gemini
+                Ask Local AI
               </Button>
               <Button variant="ghost" size="sm" className="h-8 text-zinc-400 hover:text-white">
                 <Play className="w-3.5 h-3.5 mr-1.5" />
@@ -598,7 +598,7 @@ export default function Builder({ agent, onUpdate }: BuilderProps) {
           )}
         </Card>
       </div>
-      {/* Floating Gemini Chat */}
+      {/* Floating Local AI Chat */}
       {isChatOpen && (
         <div className="fixed bottom-24 right-8 w-96 h-[500px] z-[100] shadow-2xl animate-in slide-in-from-bottom-5 duration-300">
            <div className="h-full flex flex-col relative group">
@@ -608,7 +608,7 @@ export default function Builder({ agent, onUpdate }: BuilderProps) {
              >
                <X className="w-3 h-3" />
              </button>
-             <GeminiOrchestrator 
+             <LocalOrchestrator 
                agents={[agent]} 
                onUpdateAgent={() => {}} 
                onStartTraining={() => {}} 

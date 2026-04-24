@@ -1,35 +1,19 @@
 import { AgentConfig } from "../types";
 
-/**
- * Maps our UI model labels/values to valid Gemini model IDs
- */
-function getModelId(coreModel: string | undefined): string {
-  if (!coreModel) return "gemini-1.5-flash";
-  
-  const model = coreModel.toLowerCase();
-  if (model.includes("pro")) return "gemini-1.5-pro";
-  if (model.includes("flash")) return "gemini-1.5-flash";
-  
-  return "gemini-1.5-flash";
-}
-
 export async function simulateAgentResponse(agent: AgentConfig, userMessage: string, history: { role: 'user' | 'model', parts: { text: string }[] }[]) {
-  const modelId = getModelId(agent.coreModel);
   const moduleNames = agent.modules.map(m => m.name).join(", ");
   const systemInstruction = `
     ${agent.systemInstruction || ""}
-    
     Active Capabilities: ${moduleNames}.
     Reference these capabilities when they are relevant to the user request.
     Keep your tone professional and consistent with your persona: ${agent.name}.
   `;
 
   try {
-    const response = await fetch('/api/gemini/simulate', {
+    const response = await fetch('/api/ai/simulate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        modelId,
         systemInstruction,
         history,
         userMessage
@@ -45,13 +29,12 @@ export async function simulateAgentResponse(agent: AgentConfig, userMessage: str
   } catch (error: any) {
     console.error("Simulation error:", error);
     return { 
-      text: "Simulation Engine Error", 
+      text: "Local Simulation Engine Error", 
       success: false, 
       error: error?.message || "Unknown error",
       logs: [
-        `[${new Date().toISOString()}] CRITICAL_FAILURE: Failed to synthesize response.`,
-        `[${new Date().toISOString()}] CONTEXT: Attempted to use model ${modelId} with modules [${moduleNames}]`,
-        `[${new Date().toISOString()}] STACK_TRACE: ${error?.stack?.slice(0, 100)}...`
+        `[${new Date().toISOString()}] CRITICAL_FAILURE: Local node failed to synthesize response.`,
+        `[${new Date().toISOString()}] CONTEXT: Attempted to use local core with modules [${moduleNames}]`
       ]
     };
   }
@@ -59,7 +42,7 @@ export async function simulateAgentResponse(agent: AgentConfig, userMessage: str
 
 export async function generateSyntheticData(domain: string) {
   try {
-    const response = await fetch('/api/gemini/synthetic-data', {
+    const response = await fetch('/api/ai/synthetic-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ domain })
@@ -78,7 +61,7 @@ export async function generateSyntheticData(domain: string) {
 
 export async function orchestrateAgentResponse(systemInstruction: string, contents: any[], tools?: any[]) {
   try {
-    const response = await fetch('/api/gemini/orchestrate', {
+    const response = await fetch('/api/ai/orchestrate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -102,7 +85,7 @@ export async function orchestrateAgentResponse(systemInstruction: string, conten
 
 export async function generateArenaResponses(input: string) {
   try {
-    const response = await fetch('/api/gemini/arena', {
+    const response = await fetch('/api/ai/arena', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input })
