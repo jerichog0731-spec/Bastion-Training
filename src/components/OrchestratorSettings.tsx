@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Server, Key, Globe, CheckCircle2, AlertCircle, Cpu, Monitor, Download, ArrowUpRight, Plus, Trash2, FileUp, BrainCircuit, BrainCircuit as BrainCircuitIcon } from 'lucide-react';
+import { Shield, Server, Key, Globe, CheckCircle2, AlertCircle, Cpu, Monitor, Download, ArrowUpRight, Plus, Trash2, FileUp, BrainCircuit, Github, BrainCircuit as BrainCircuitIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,10 +16,29 @@ interface OrchestratorSettingsProps {
   onUpdate: (config: OrchestratorConfig) => void;
   customModels: CustomModel[];
   setCustomModels: React.Dispatch<React.SetStateAction<CustomModel[]>>;
+  githubStatus: { connected: boolean; user?: string; avatar?: string };
+  handleConnectGithub: () => void;
+  repoName: string;
+  setRepoName: (val: string) => void;
+  branchName: string;
+  setBranchName: (val: string) => void;
 }
 
-export default function OrchestratorSettings({ config, onUpdate, customModels, setCustomModels }: OrchestratorSettingsProps) {
+export default function OrchestratorSettings({ 
+  config, 
+  onUpdate, 
+  customModels, 
+  setCustomModels,
+  githubStatus,
+  handleConnectGithub,
+  repoName,
+  setRepoName,
+  branchName,
+  setBranchName
+}: OrchestratorSettingsProps) {
   const [testStatus, setTestStatus] = React.useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [selectedVaultModelId, setSelectedVaultModelId] = React.useState<string>(customModels[0]?.id || '');
+
   const [activeTab, setActiveTab] = React.useState<string>(
     config.provider === 'custom-model-vault' ? 'vault' : 
     config.provider === 'custom-proprietary' ? 'custom-proprietary' : 
@@ -371,10 +390,20 @@ export default function OrchestratorSettings({ config, onUpdate, customModels, s
                            </div>
                         ) : (
                           customModels.map(model => (
-                            <div key={model.id} className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between hover:border-zinc-700 transition-all group">
+                            <div 
+                              key={model.id} 
+                              onClick={() => setSelectedVaultModelId(model.id)}
+                              className={cn(
+                                "p-3 bg-zinc-950 border rounded-xl flex items-center justify-between hover:border-zinc-700 transition-all group cursor-pointer",
+                                selectedVaultModelId === model.id ? "border-emerald-500 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.1)]" : "border-zinc-800"
+                              )}
+                            >
                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center">
-                                     <BrainCircuit className="w-4 h-4 text-emerald-500" />
+                                  <div className={cn(
+                                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                                    selectedVaultModelId === model.id ? "bg-emerald-500/20" : "bg-zinc-900"
+                                  )}>
+                                     <BrainCircuit className={cn("w-4 h-4", selectedVaultModelId === model.id ? "text-emerald-400" : "text-emerald-500")} />
                                   </div>
                                   <div className="min-w-0">
                                      <p className="text-xs font-bold text-white truncate">{model.name}</p>
@@ -387,7 +416,8 @@ export default function OrchestratorSettings({ config, onUpdate, customModels, s
                                     variant="ghost" 
                                     size="icon" 
                                     className="h-7 w-7 text-zinc-700 hover:text-red-500"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       setCustomModels(customModels.filter(m => m.id !== model.id));
                                       toast.info(`Model ${model.name} purged from vault.`);
                                     }}
@@ -402,9 +432,21 @@ export default function OrchestratorSettings({ config, onUpdate, customModels, s
                     </ScrollArea>
 
                     <Button 
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase h-9"
-                      onClick={() => onUpdate({ ...config, provider: 'custom-model-vault', modelName: customModels[0]?.name || 'No model selected' })}
-                      disabled={customModels.length === 0}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase h-9 shadow-lg shadow-emerald-500/20"
+                      onClick={() => {
+                        const selectedModel = customModels.find(m => m.id === selectedVaultModelId);
+                        if (selectedModel) {
+                          onUpdate({ 
+                            ...config, 
+                            provider: 'custom-model-vault', 
+                            modelName: selectedModel.name 
+                          });
+                          toast.success(`Brain mounted: ${selectedModel.name}`);
+                        } else {
+                          toast.error("Invalid model selection");
+                        }
+                      }}
+                      disabled={customModels.length === 0 || !selectedVaultModelId}
                     >
                       Mount Selection to Brain
                     </Button>
@@ -415,6 +457,66 @@ export default function OrchestratorSettings({ config, onUpdate, customModels, s
           </CardContent>
         </Card>
       </div>
+
+      {/* GitHub Integration Panel */}
+      <Card className="bg-zinc-900 border-zinc-800 overflow-hidden">
+        <div className="bg-zinc-950/50 p-6 border-b border-zinc-800 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center border border-zinc-800 ring-1 ring-white/5">
+              <Github className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white uppercase tracking-tight">GitHub Integration</h3>
+              <p className="text-xs text-zinc-500 font-mono">Sync neural configurations with external repositories</p>
+            </div>
+          </div>
+          {githubStatus.connected ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest">Linked: {githubStatus.user}</span>
+              </div>
+              {githubStatus.avatar && <img src={githubStatus.avatar} alt="github-avatar" className="w-8 h-8 rounded-full border-2 border-zinc-700 shadow-xl" />}
+            </div>
+          ) : (
+            <Button 
+              size="lg" 
+              className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-widest text-xs h-10 px-6"
+              onClick={handleConnectGithub}
+            >
+              <Github className="w-4 h-4 mr-2" />
+              Connect GitHub Account
+            </Button>
+          )}
+        </div>
+        <CardContent className="p-6 bg-zinc-900/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Default Repository</Label>
+              <Input 
+                placeholder="username/repository" 
+                value={repoName}
+                onChange={(e) => setRepoName(e.target.value)}
+                className="bg-zinc-950 border-zinc-800 focus:border-orange-500/50 h-10 text-xs"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Primary Sync Branch</Label>
+              <Input 
+                placeholder="main" 
+                value={branchName}
+                onChange={(e) => setBranchName(e.target.value)}
+                className="bg-zinc-950 border-zinc-800 focus:border-orange-500/50 h-10 text-xs"
+              />
+            </div>
+            <div className="flex items-end pb-1.5">
+              <p className="text-[10px] text-zinc-600 leading-relaxed italic">
+                Defining a repository here enables "Push to GitHub" actions across the neural workspace, ensuring your agent configurations are backed up to version control.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

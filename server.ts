@@ -8,8 +8,13 @@ import { spawn } from 'child_process';
 import { WebSocketServer } from 'ws';
 import fs from 'fs';
 import { GoogleGenAI } from "@google/genai";
+import { Octokit } from "octokit";
+import axios from "axios";
 
 dotenv.config();
+
+// In-memory store for GitHub tokens (demo purposes)
+const gitHubTokens = new Map<string, string>();
 
 // Initialize Gemini AI
 let genAI: GoogleGenAI | null = null;
@@ -519,6 +524,150 @@ async function startServer() {
       }
     }
   }));
+
+  // GitHub OAuth & Integration
+  app.get('/api/auth/github/url', (req, res) => {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    if (!clientId) {
+      return res.status(500).json({ error: "GITHUB_CLIENT_ID not configured" });
+    }
+    
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/github/callback`;
+    const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=repo,user`;
+    res.json({ url });
+  });
+
+  app.get('/api/auth/github/callback', async (req, res) => {
+    const { code } = req.query;
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+    if (!code || !clientId || !clientSecret) {
+      return res.status(400).send("Missing authentication parameters");
+    }
+
+    try {
+      const response = await axios.post('https://github.com/login/oauth/access_token', {
+        client_id: clientId,
+        client_secret: clientSecret,
+        code
+      }, {
+        headers: { Accept: 'application/json' }
+      });
+
+      const token = response.data.access_token;
+      if (token) {
+        // Store token in global map (all users share for this simple demo, 
+        // or we could use session/userId)
+        gitHubTokens.set('default', token);
+      }
+
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.opener.postMessage({ type: 'GITHUB_AUTH_SUCCESS' }, '*');
+              window.close();
+            </script>
+            <p>Authentication successful. You can close this window now.</p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("GitHub Auth Error:", error);
+      res.status(500).send("Authentication failed");
+    }
+  });
+
+  app.get('/api/github/status', async (req, res) => {
+    const token = gitHubTokens.get('default');
+    if (!token) return res.json({ connected: false });
+
+    try {
+      const octokit = new Octokit({ auth: token });
+      const { data: user } = await octokit.rest.users.getAuthenticated();
+      res.json({ connected: true, user: user.login, avatar: user.avatar_url });
+    } catch (error) {
+      res.json({ connected: false });
+    }
+  });
+
+  app.post('/api/github/push', async (req, res) => {
+    const { repo, branch, message, content, filename } = req.body;
+    const token = gitHubTokens.get('default');
+    if (!token) return res.status(401).json({ error: "Not connected to GitHub" });
+
+    try {
+      const octokit = new Octokit({ auth: token });
+      const [owner, name] = repo.split('/');
+
+      // 1. Get branch ref
+      let ref;
+      try {
+        const { data } = await octokit.rest.git.getRef({ owner, repo: name, ref: `heads/${branch}` });
+        ref = data;
+      } catch (e) {
+        // Create branch if not exists? For now, assume it exists.
+        return res.status(404).json({ error: "Branch not found" });
+      }
+
+      // 2. Get file SHA if exists
+      let sha;
+      try {
+        const { data } = await octokit.rest.repos.getContent({ owner, repo: name, path: filename, ref: branch });
+        if (!Array.isArray(data)) sha = data.sha;
+      } catch (e) {}
+
+      // 3. Create or update file
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner,
+        repo: name,
+        path: filename,
+        message,
+        content: Buffer.from(content).toString('base64'),
+        branch,
+        sha
+      });
+
+      res.json({ status: "success", message: `Neural snapshot pushed to ${repo}` });
+    } catch (error: any) {
+      console.error("GitHub Push Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/github/sync', async (req, res) => {
+    const { repo, branch } = req.query;
+    const token = gitHubTokens.get('default');
+    if (!token) return res.status(401).json({ error: "Not connected to GitHub" });
+
+    try {
+      const octokit = new Octokit({ auth: token });
+      const [owner, name] = (repo as string).split('/');
+
+      const { data } = await octokit.rest.repos.getContent({
+        owner,
+        repo: name,
+        path: 'agents',
+        ref: branch as string
+      });
+
+      if (Array.isArray(data)) {
+        const files = data.filter(f => f.name.endsWith('.json')).map(f => ({
+          name: f.name,
+          path: f.path,
+          sha: f.sha,
+          download_url: f.download_url
+        }));
+        res.json({ status: "success", files });
+      } else {
+        res.json({ status: "success", files: [] });
+      }
+    } catch (error: any) {
+      console.error("GitHub Sync Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Health check endpoint
   app.get("/api/health", (req, res) => {

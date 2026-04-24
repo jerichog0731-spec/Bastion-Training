@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   History, 
   RotateCcw, 
@@ -12,7 +12,12 @@ import {
   Split,
   FileCode,
   Globe,
-  Trash2
+  Trash2,
+  Github,
+  CloudUpload,
+  RefreshCw,
+  ExternalLink,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AgentConfig, AgentVersion } from '../types';
@@ -20,19 +25,103 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface VersionControlProps {
   agent: AgentConfig;
   versions: AgentVersion[];
+  githubStatus: { connected: boolean; user?: string; avatar?: string };
+  repoName: string;
+  branchName: string;
   onRestore: (version: AgentVersion) => void;
   onDelete: (versionId: string) => void;
 }
 
-export default function VersionControl({ agent, versions, onRestore, onDelete }: VersionControlProps) {
+export default function VersionControl({ 
+  agent, 
+  versions, 
+  githubStatus,
+  repoName,
+  branchName,
+  onRestore, 
+  onDelete 
+}: VersionControlProps) {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [isComparing, setIsComparing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handlePushToGithub = async (version: AgentVersion) => {
+    if (!githubStatus.connected) {
+      toast.error("Please connect your GitHub account first.");
+      return;
+    }
+
+    if (!repoName.includes('/')) {
+      toast.error("Please enter a valid repository (owner/repo).");
+      return;
+    }
+
+    setIsSyncing(true);
+    const content = JSON.stringify(version.config, null, 2);
+    const filename = `agents/${agent.name.toLowerCase().replace(/\s+/g, '_')}_v${version.version}.json`;
+
+    try {
+      const res = await fetch('/api/github/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repo: repoName,
+          branch: branchName,
+          message: `Relay: Core snapshot sync - ${agent.name} v${version.version}`,
+          content,
+          filename
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Neural snapshot pushed to GitHub successfully!");
+      } else {
+        toast.error(`Push failed: ${data.error}`);
+      }
+    } catch (e) {
+      toast.error("Communications failure with GitHub bridge.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSyncFromRepo = async () => {
+    if (!githubStatus.connected) {
+      toast.error("Please connect your GitHub account first.");
+      return;
+    }
+
+    if (!repoName.includes('/')) {
+      toast.error("Please enter a valid repository (owner/repo).");
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const res = await fetch(`/api/github/sync?repo=${repoName}&branch=${branchName}`);
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Synched ${data.files.length} configurations from GitHub.`);
+        // For now, we just list them in console or show a toast. 
+        // In a real app we'd add them to the versions list.
+        console.log("Synchronized files:", data.files);
+      } else {
+        toast.error(`Sync failed: ${data.error}`);
+      }
+    } catch (e) {
+      toast.error("Communications failure with GitHub bridge.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const agentVersions = versions.filter(v => v.agentId === agent?.id).sort((a,b) => b.createdAt - a.createdAt);
 
@@ -79,7 +168,7 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
           </Button>
         </div>
       </div>
-
+      
       {!isComparing ? (
         <Card className="bg-zinc-900 border-zinc-800">
           <CardHeader className="border-b border-zinc-800 pb-4">
@@ -162,6 +251,18 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
                           <RotateCcw className="w-3 h-3 mr-1.5" />
                           Revert
                         </Button>
+                        {githubStatus.connected && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-xs text-zinc-500 hover:text-emerald-500"
+                            disabled={isSyncing}
+                            onClick={() => handlePushToGithub(v)}
+                          >
+                            {isSyncing ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CloudUpload className="w-3 h-3" />}
+                            <span className="ml-1.5 font-bold uppercase text-[9px]">Push</span>
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="sm" 

@@ -74,6 +74,7 @@ import SwarmView from './components/SwarmView';
 import TemplatesView from './components/TemplatesView';
 import HardwareIntelligenceMonitor from './components/HardwareIntelligenceMonitor';
 import BastionLogo from './components/BastionLogo';
+import FloatingOrchestrator from './components/FloatingOrchestrator';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -81,6 +82,9 @@ export default function App() {
   const [jobs, setJobs] = useState<TrainingJob[]>([]);
   const [versions, setVersions] = useState<AgentVersion[]>([]);
   const [customModels, setCustomModels] = useState<CustomModel[]>([]);
+  const [githubStatus, setGithubStatus] = useState<{ connected: boolean; user?: string; avatar?: string }>({ connected: false });
+  const [repoName, setRepoName] = useState('');
+  const [branchName, setBranchName] = useState('main');
   
   // Hydrate state from localStorage on mount
   useEffect(() => {
@@ -88,12 +92,45 @@ export default function App() {
     const savedJobs = localStorage.getItem('bastion_training_jobs');
     const savedVersions = localStorage.getItem('bastion_versions');
     const savedModels = localStorage.getItem('bastion_custom_models');
+    const savedRepo = localStorage.getItem('bastion_repo_name');
+    const savedBranch = localStorage.getItem('bastion_branch_name');
 
     if (savedAgents) setAgents(JSON.parse(savedAgents));
     if (savedJobs) setJobs(JSON.parse(savedJobs));
     if (savedVersions) setVersions(JSON.parse(savedVersions));
     if (savedModels) setCustomModels(JSON.parse(savedModels));
+    if (savedRepo) setRepoName(savedRepo);
+    if (savedBranch) setBranchName(savedBranch);
+
+    checkGithubStatus();
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'GITHUB_AUTH_SUCCESS') {
+        checkGithubStatus();
+        toast.success("GitHub account connected successfully!");
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
+
+  const checkGithubStatus = async () => {
+    try {
+      const res = await fetch('/api/github/status');
+      const data = await res.json();
+      setGithubStatus(data);
+    } catch (e) {}
+  };
+
+  const handleConnectGithub = async () => {
+    try {
+      const res = await fetch('/api/auth/github/url');
+      const { url } = await res.json();
+      window.open(url, 'github_oauth', 'width=600,height=700');
+    } catch (e) {
+      toast.error("Failed to initiate GitHub authentication.");
+    }
+  };
 
   // Persist state to localStorage on changes
   useEffect(() => {
@@ -111,6 +148,14 @@ export default function App() {
   useEffect(() => {
     if (customModels.length > 0) localStorage.setItem('bastion_custom_models', JSON.stringify(customModels));
   }, [customModels]);
+
+  useEffect(() => {
+    localStorage.setItem('bastion_repo_name', repoName);
+  }, [repoName]);
+
+  useEffect(() => {
+    localStorage.setItem('bastion_branch_name', branchName);
+  }, [branchName]);
 
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [orchestratorConfig, setOrchestratorConfig] = useState<OrchestratorConfig>({
@@ -362,6 +407,12 @@ export default function App() {
                     onUpdate={setOrchestratorConfig} 
                     customModels={customModels}
                     setCustomModels={setCustomModels}
+                    githubStatus={githubStatus}
+                    handleConnectGithub={handleConnectGithub}
+                    repoName={repoName}
+                    setRepoName={setRepoName}
+                    branchName={branchName}
+                    setBranchName={setBranchName}
                   />
                 )}
                 {activeTab === 'orchestrator' && (
@@ -427,6 +478,9 @@ export default function App() {
                   <VersionControl 
                     agent={selectedAgent} 
                     versions={versions} 
+                    githubStatus={githubStatus}
+                    repoName={repoName}
+                    branchName={branchName}
                     onRestore={(v) => {
                       setAgents(prev => prev.map(a => a.id === v.agentId ? { ...v.config, updatedAt: Date.now() } : a));
                       setTimeout(() => toast.success(`Configuration reverted to v${v.version}`), 100);
@@ -450,6 +504,7 @@ export default function App() {
         </ScrollArea>
       </main>
 
+      <FloatingOrchestrator config={orchestratorConfig} />
       <Toaster position="bottom-right" theme="dark" />
 
       {/* Agent Creation Dialog */}
