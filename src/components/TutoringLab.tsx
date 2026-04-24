@@ -15,12 +15,35 @@ interface TutoringLabProps {
   customModels: CustomModel[];
   setCustomModels: React.Dispatch<React.SetStateAction<CustomModel[]>>;
   sessions: TutoringSession[];
+  setSessions: React.Dispatch<React.SetStateAction<TutoringSession[]>>;
   onStartSession: (session: Partial<TutoringSession>) => void;
 }
 
-export default function TutoringLab({ agents, customModels, setCustomModels, sessions, onStartSession }: TutoringLabProps) {
+export default function TutoringLab({ agents, customModels, setCustomModels, sessions, setSessions, onStartSession }: TutoringLabProps) {
   const [selectedTeacherId, setSelectedTeacherId] = React.useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = React.useState<string>('');
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setSessions(prevSessions => prevSessions.map(session => {
+        if (session.status === 'active') {
+          const currentProgress = session.progress || 0;
+          const newProgress = Math.min(100, currentProgress + (Math.random() * 2));
+          
+          return {
+            ...session,
+            lastIteration: (session.lastIteration || 0) + 1,
+            insightsGenerated: (session.insightsGenerated || 0) + Math.floor(Math.random() * 3),
+            progress: newProgress,
+            status: newProgress >= 100 ? 'completed' : 'active'
+          };
+        }
+        return session;
+      }));
+    }, 2000);
+
+    return () => clearInterval(timer);
+  }, [setSessions]);
 
   const handleInitialize = () => {
     if (!selectedTeacherId || !selectedStudentId) {
@@ -38,6 +61,7 @@ export default function TutoringLab({ agents, customModels, setCustomModels, ses
       studentAgentId: selectedStudentId,
       subject: "Cross-Model Knowledge Distillation",
       status: 'active',
+      progress: 0,
       insightsGenerated: 0,
       lastIteration: 0,
       createdAt: Date.now()
@@ -259,9 +283,15 @@ export default function TutoringLab({ agents, customModels, setCustomModels, ses
                           <div className="space-y-2">
                               <div className="flex justify-between text-[10px] uppercase font-bold">
                                   <span className="text-zinc-500 italic">Distillation Progress</span>
-                                  <span className="text-orange-500">Synthetic Alignment: 72%</span>
+                                  <span className={session.status === 'completed' ? "text-emerald-500" : "text-orange-500"}>
+                                      {session.status === 'completed' ? 'Alignment Complete' : `Synthetic Alignment: ${Math.round(session.progress || 0)}%`}
+                                  </span>
                               </div>
-                              <Progress value={72} className="h-1 bg-zinc-800" indicatorClassName="bg-orange-500" />
+                              <Progress 
+                                  value={session.progress || 0} 
+                                  className="h-1 bg-zinc-800" 
+                                  indicatorClassName={session.status === 'completed' ? "bg-emerald-500" : "bg-orange-500"} 
+                              />
                           </div>
 
                           <div className="flex items-center justify-between pt-2">

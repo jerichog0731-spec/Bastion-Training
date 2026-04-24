@@ -68,6 +68,7 @@ export interface TutoringSession {
   studentAgentId: string;
   subject: string;
   status: 'active' | 'completed' | 'paused';
+  progress?: number;
   insightsGenerated: number;
   lastIteration: number;
   createdAt: number;

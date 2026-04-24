@@ -342,6 +342,7 @@ export default function App() {
                     customModels={customModels}
                     setCustomModels={setCustomModels}
                     sessions={tutoringSessions} 
+                    setSessions={setTutoringSessions}
                     onStartSession={(s) => setTutoringSessions([s as TutoringSession, ...tutoringSessions])} 
                   />
                 )}
