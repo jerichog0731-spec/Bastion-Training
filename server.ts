@@ -434,20 +434,28 @@ async function startServer() {
     res.json(triggers);
   });
 
-  // Arena: Record preference
+  // Arena: Record preference (Standard DPO Format)
   app.post("/api/arena/preference", (req, res) => {
     const { triggerId, preferredResponseId, data } = req.body;
+    
+    const chosenResponse = data.responses.find((r: any) => r.id === preferredResponseId)?.text;
+    const rejectedResponse = data.responses.find((r: any) => r.id !== preferredResponseId)?.text;
+
     const entry = {
-      timestamp: new Date().toISOString(),
-      triggerId,
-      preferredResponseId,
-      ...data
+      prompt: data.input,
+      chosen: chosenResponse,
+      rejected: rejectedResponse,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        triggerId,
+        preferredResponseId
+      }
     };
     
-    // Simulate appending to JSONL
+    // Append to JSONL for DPO training
     fs.appendFileSync(path.join(process.cwd(), 'preferences.jsonl'), JSON.stringify(entry) + '\n');
     
-    res.json({ status: "success", message: "Preference recorded in reward model buffer" });
+    res.json({ status: "success", message: "Preference recorded in standard DPO chosen/rejected format" });
   });
 
   // Edge Compilation: Trigger StableHLO export

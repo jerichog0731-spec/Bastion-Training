@@ -21,7 +21,8 @@ import {
   LayoutGrid,
   Wand2,
   BrainCircuit,
-  Terminal
+  Terminal,
+  Network
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -69,6 +70,7 @@ import { UniversalOrchestrator } from './components/UniversalOrchestrator';
 import BastionView from './components/BastionView';
 import OrchestratorSettings from './components/OrchestratorSettings';
 import TutoringLab from './components/TutoringLab';
+import SwarmView from './components/SwarmView';
 import TemplatesView from './components/TemplatesView';
 import HardwareIntelligenceMonitor from './components/HardwareIntelligenceMonitor';
 import BastionLogo from './components/BastionLogo';
@@ -203,6 +205,12 @@ export default function App() {
             label="Tutoring Lab" 
             active={activeTab === 'tutoring-lab'} 
             onClick={() => setActiveTab('tutoring-lab')}
+          />
+          <SidebarItem 
+            icon={<Network className="w-4 h-4" />} 
+            label="Neural Swarm" 
+            active={activeTab === 'swarm'} 
+            onClick={() => setActiveTab('swarm')}
           />
           <SidebarItem 
             icon={<Shield className="w-4 h-4" />} 
@@ -346,6 +354,7 @@ export default function App() {
                     onStartSession={(s) => setTutoringSessions([s as TutoringSession, ...tutoringSessions])} 
                   />
                 )}
+                {activeTab === 'swarm' && <SwarmView agents={agents} />}
                 {activeTab === 'training' && <TrainingView agents={agents} jobs={jobs} setJobs={setJobs} setCustomModels={setCustomModels} />}
                 {(activeTab === 'orchestrator-settings' || activeTab === 'settings') && (
                   <OrchestratorSettings 
