@@ -340,11 +340,12 @@ export default function App() {
                   <TutoringLab 
                     agents={agents} 
                     customModels={customModels}
+                    setCustomModels={setCustomModels}
                     sessions={tutoringSessions} 
                     onStartSession={(s) => setTutoringSessions([s as TutoringSession, ...tutoringSessions])} 
                   />
                 )}
-                {activeTab === 'training' && <TrainingView agents={agents} jobs={jobs} setJobs={setJobs} />}
+                {activeTab === 'training' && <TrainingView agents={agents} jobs={jobs} setJobs={setJobs} setCustomModels={setCustomModels} />}
                 {(activeTab === 'orchestrator-settings' || activeTab === 'settings') && (
                   <OrchestratorSettings 
                     config={orchestratorConfig} 
@@ -411,7 +412,7 @@ export default function App() {
                     </Button>
                   </div>
                 )}
-                {activeTab === 'analytics' && <Analytics />}
+                {activeTab === 'analytics' && <Analytics agents={agents} jobs={jobs} versions={versions} />}
                 {activeTab === 'deployments' && selectedAgent && (
                   <VersionControl 
                     agent={selectedAgent} 
@@ -569,36 +570,41 @@ function Dashboard({ agents, onSelectAgent, onCreateNew }: { agents: AgentConfig
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {agents.map(agent => (
-          <Card key={agent.id} className="bg-zinc-900 border-zinc-800 hover:border-orange-500/50 transition-all cursor-pointer group" onClick={() => onSelectAgent(agent.id)}>
-            <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-4 group-hover:bg-orange-500/20 group-hover:text-orange-500 transition-colors">
-                  <Bot className="w-6 h-6" />
+        {agents.map(agent => {
+          const hoursAgo = Math.floor((Date.now() - agent.updatedAt) / 3600000);
+          const timeLabel = hoursAgo === 0 ? 'Recently updated' : `${hoursAgo}h ago`;
+          
+          return (
+            <Card key={agent.id} className="bg-zinc-900 border-zinc-800 hover:border-orange-500/50 transition-all cursor-pointer group" onClick={() => onSelectAgent(agent.id)}>
+              <CardHeader className="pb-4">
+                <div className="flex justify-between items-start">
+                  <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-4 group-hover:bg-orange-500/20 group-hover:text-orange-500 transition-colors">
+                    <Bot className="w-6 h-6" />
+                  </div>
+                  <Badge variant="outline" className="text-xs border-zinc-700 bg-zinc-950 font-mono">v{agent.version}</Badge>
                 </div>
-                <Badge variant="outline" className="text-xs border-zinc-700 bg-zinc-950 font-mono">v{agent.version}</Badge>
-              </div>
-              <CardTitle className="text-xl text-zinc-100 group-hover:text-orange-500 transition-colors">{agent.name}</CardTitle>
-              <CardDescription className="line-clamp-2 text-zinc-500 leading-normal">{agent.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono text-zinc-500">
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-950 rounded border border-zinc-800">
-                  <BrainCircuit className="w-3 h-3 text-orange-500" />
-                  {agent.coreModel || 'GPT-4o'}
+                <CardTitle className="text-xl text-zinc-100 group-hover:text-orange-500 transition-colors">{agent.name}</CardTitle>
+                <CardDescription className="line-clamp-2 text-zinc-500 leading-normal">{agent.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono text-zinc-500">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-950 rounded border border-zinc-800">
+                    <BrainCircuit className="w-3 h-3 text-orange-500" />
+                    {agent.coreModel || 'GPT-4o'}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5" />
+                    {agent.modules.length} Nodes
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <History className="w-3.5 h-3.5" />
+                    {timeLabel}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5" />
-                  {agent.modules.length} Nodes
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <History className="w-3.5 h-3.5" />
-                  Updated 2h ago
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
         
         <button 
           onClick={onCreateNew}
@@ -615,81 +621,6 @@ function Dashboard({ agents, onSelectAgent, onCreateNew }: { agents: AgentConfig
 }
 
 
-
-function Deployments() {
-  const deployments: DeploymentHistory[] = [
-    { 
-      id: 'd-1', 
-      version: '1.2.0', 
-      deployedAt: Date.now() - 3600000 * 2, 
-      status: 'active',
-      config: {} as any
-    },
-    { 
-      id: 'd-2', 
-      version: '1.1.5', 
-      deployedAt: Date.now() - 86400000 * 3, 
-      status: 'archived',
-      config: {} as any
-    },
-    { 
-      id: 'd-3', 
-      version: '1.1.0', 
-      deployedAt: Date.now() - 86400000 * 10, 
-      status: 'archived',
-      config: {} as any
-    }
-  ];
-
-  return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-3xl font-bold tracking-tight text-white">Version Control</h2>
-        <p className="text-zinc-400 font-mono text-sm uppercase tracking-widest opacity-70 italic serif">Deployment Logs & History</p>
-      </div>
-
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-950/50">
-              <th className="p-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Version</th>
-              <th className="p-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Deployment Date</th>
-              <th className="p-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
-              <th className="p-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {deployments.map((d) => (
-              <tr key={d.id} className="border-b border-zinc-800 hover:bg-zinc-800/30 transition-colors">
-                <td className="p-4 font-mono text-sm">v{d.version}</td>
-                <td className="p-4 text-sm text-zinc-400">
-                  {new Date(d.deployedAt).toLocaleDateString()} at {new Date(d.deployedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </td>
-                <td className="p-4">
-                  <Badge 
-                    variant={d.status === 'active' ? 'default' : 'secondary'} 
-                    className={cn(
-                      "text-[10px] uppercase font-bold",
-                      d.status === 'active' ? "bg-emerald-500/20 text-emerald-400 border-none" : "bg-zinc-800 text-zinc-500"
-                    )}
-                  >
-                    {d.status}
-                  </Badge>
-                </td>
-                <td className="p-4 text-right">
-                  <Button variant="ghost" size="sm" className="h-8 text-xs hover:text-orange-500">
-                    <History className="w-3.5 h-3.5 mr-2" />
-                    Rollback
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 function SkillsView({ onInstall }: { onInstall: (s: Skill) => void }) {
   const categories = Array.from(new Set(WORK_SKILLS.map(s => s.category)));

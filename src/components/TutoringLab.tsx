@@ -13,11 +13,12 @@ import { BrainCircuit, Cpu } from 'lucide-react';
 interface TutoringLabProps {
   agents: AgentConfig[];
   customModels: CustomModel[];
+  setCustomModels: React.Dispatch<React.SetStateAction<CustomModel[]>>;
   sessions: TutoringSession[];
   onStartSession: (session: Partial<TutoringSession>) => void;
 }
 
-export default function TutoringLab({ agents, customModels, sessions, onStartSession }: TutoringLabProps) {
+export default function TutoringLab({ agents, customModels, setCustomModels, sessions, onStartSession }: TutoringLabProps) {
   const [selectedTeacherId, setSelectedTeacherId] = React.useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = React.useState<string>('');
 
@@ -44,6 +45,22 @@ export default function TutoringLab({ agents, customModels, sessions, onStartSes
     toast.success("Cross-model tutoring loop engaged");
   };
 
+  const handleQuickUpload = () => {
+    const name = prompt(`Enter name for new neural prototype:`);
+    if (!name) return;
+    
+    const newModel: CustomModel = {
+      id: `model-${Date.now()}`,
+      name,
+      type: 'LLM',
+      format: 'GGUF',
+      uploadedAt: Date.now()
+    };
+    
+    setCustomModels([...customModels, newModel]);
+    toast.success(`Registered "${name}" to global vault.`);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-1">
@@ -57,13 +74,18 @@ export default function TutoringLab({ agents, customModels, sessions, onStartSes
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Initialization Panel */}
         <Card className="lg:col-span-1 bg-zinc-900 border-zinc-800">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-zinc-400">Initialize Feedback Loop</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">Teacher Entity (Expert)</label>
-              <ScrollArea className="h-[200px] pr-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] uppercase font-bold text-zinc-500">Teacher Entity (Expert)</label>
+                <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-zinc-600 italic">Select source intelligence</span>
+                </div>
+              </div>
+              <ScrollArea className="h-[200px] pr-4 border border-zinc-800 rounded-xl bg-zinc-950 p-2">
                 <div className="grid gap-2">
                   <div className="text-[8px] uppercase font-bold text-zinc-600 mb-1 px-1">Neural Agents</div>
                   {agents.map(agent => (
@@ -80,35 +102,49 @@ export default function TutoringLab({ agents, customModels, sessions, onStartSes
                     </button>
                   ))}
                   
-                  {customModels.length > 0 && (
-                    <>
-                      <div className="text-[8px] uppercase font-bold text-emerald-600 mb-1 mt-4 px-1">Vault Models</div>
-                      {customModels.map(model => (
-                        <button
-                          key={model.id}
-                          onClick={() => setSelectedTeacherId(model.id)}
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
-                            selectedTeacherId === model.id ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700"
-                          )}
-                        >
-                          <BrainCircuit className="w-4 h-4 flex-shrink-0" />
-                          <span className="text-xs font-bold truncate">{model.name}</span>
-                        </button>
-                      ))}
-                    </>
+                  <div className="text-[8px] uppercase font-bold text-emerald-600 mb-1 mt-4 px-1">Vault Models</div>
+                  {customModels.map(model => (
+                    <button
+                      key={model.id}
+                      onClick={() => setSelectedTeacherId(model.id)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
+                        selectedTeacherId === model.id ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                      )}
+                    >
+                      <BrainCircuit className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-xs font-bold truncate">{model.name}</span>
+                    </button>
+                  ))}
+                  
+                  {customModels.length === 0 && (
+                    <div className="p-4 text-center border border-dashed border-zinc-800 rounded-lg">
+                        <p className="text-[8px] text-zinc-700 uppercase">No vault models found</p>
+                    </div>
                   )}
                 </div>
               </ScrollArea>
+              <Button 
+                variant="ghost" 
+                className="w-full h-8 text-[9px] uppercase font-black text-zinc-600 hover:text-emerald-500 hover:bg-emerald-500/5 border border-dashed border-zinc-800"
+                onClick={handleQuickUpload}
+              >
+                + Register New Model to Vault
+              </Button>
             </div>
 
-            <div className="flex justify-center py-2">
+            <div className="flex justify-center py-0">
                 <ArrowRight className="w-5 h-5 text-zinc-700 rotate-90 lg:rotate-0" />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">Student Entity (Learner)</label>
-              <ScrollArea className="h-[200px] pr-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] uppercase font-bold text-zinc-500">Student Entity (Learner)</label>
+                <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-zinc-600 italic">Target alignment pipeline</span>
+                </div>
+              </div>
+              <ScrollArea className="h-[200px] pr-4 border border-zinc-800 rounded-xl bg-zinc-950 p-2">
                 <div className="grid gap-2">
                   <div className="text-[8px] uppercase font-bold text-zinc-600 mb-1 px-1">Neural Agents</div>
                   {agents.map(agent => (
@@ -125,26 +161,35 @@ export default function TutoringLab({ agents, customModels, sessions, onStartSes
                     </button>
                   ))}
 
-                  {customModels.length > 0 && (
-                    <>
-                      <div className="text-[8px] uppercase font-bold text-emerald-600 mb-1 mt-4 px-1">Vault Models</div>
-                      {customModels.map(model => (
-                        <button
-                          key={model.id}
-                          onClick={() => setSelectedStudentId(model.id)}
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
-                            selectedStudentId === model.id ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700"
-                          )}
-                        >
-                          <Cpu className="w-4 h-4 flex-shrink-0" />
-                          <span className="text-xs font-bold truncate">{model.name}</span>
-                        </button>
-                      ))}
-                    </>
+                  <div className="text-[8px] uppercase font-bold text-emerald-600 mb-1 mt-4 px-1">Vault Models</div>
+                  {customModels.map(model => (
+                    <button
+                      key={model.id}
+                      onClick={() => setSelectedStudentId(model.id)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
+                        selectedStudentId === model.id ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                      )}
+                    >
+                      <Cpu className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-xs font-bold truncate">{model.name}</span>
+                    </button>
+                  ))}
+                  
+                  {customModels.length === 0 && (
+                    <div className="p-4 text-center border border-dashed border-zinc-800 rounded-lg">
+                        <p className="text-[8px] text-zinc-700 uppercase">No vault models found</p>
+                    </div>
                   )}
                 </div>
               </ScrollArea>
+              <Button 
+                variant="ghost" 
+                className="w-full h-8 text-[9px] uppercase font-black text-zinc-600 hover:text-emerald-500 hover:bg-emerald-500/5 border border-dashed border-zinc-800"
+                onClick={handleQuickUpload}
+              >
+                + Distill New Intelligence Source
+              </Button>
             </div>
 
             <Button 

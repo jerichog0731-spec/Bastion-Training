@@ -20,6 +20,11 @@ interface OrchestratorSettingsProps {
 
 export default function OrchestratorSettings({ config, onUpdate, customModels, setCustomModels }: OrchestratorSettingsProps) {
   const [testStatus, setTestStatus] = React.useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [activeTab, setActiveTab] = React.useState<string>(
+    config.provider === 'custom-model-vault' ? 'vault' : 
+    config.provider === 'custom-proprietary' ? 'custom-proprietary' : 
+    config.provider
+  );
 
   const handleTestConnection = async () => {
     setTestStatus('testing');
@@ -68,38 +73,48 @@ export default function OrchestratorSettings({ config, onUpdate, customModels, s
           <CardContent className="p-0">
             <ScrollArea className="h-[500px] px-6 pb-6">
               <div className="space-y-4">
-                {(['gemini', 'custom-proprietary', 'local-hosted', 'desktop-mode', 'custom-model-vault'] as (OrchestratorProvider | 'desktop-mode')[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      if (p === 'desktop-mode') {
-                        // Special case for desktop display mode (purely visual switch in UI state)
-                      } else {
-                        onUpdate({ ...config, provider: p as OrchestratorProvider });
-                      }
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left",
-                      (config.provider === p || (p === 'desktop-mode' && window.matchMedia('(display-mode: standalone)').matches))
-                        ? "bg-orange-500/10 border-orange-500/50 text-orange-500" 
-                        : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      {p === 'gemini' ? <Globe className="w-4 h-4" /> : 
-                       p === 'local-hosted' ? <Server className="w-4 h-4" /> : 
-                       p === 'desktop-mode' ? <Monitor className="w-4 h-4" /> :
-                       p === 'custom-model-vault' ? <BrainCircuit className="w-4 h-4" /> :
-                       <Shield className="w-4 h-4" />}
-                      <span className="text-xs font-bold uppercase tracking-tighter">
-                        {p === 'desktop-mode' ? 'Desktop App' : 
-                         p === 'custom-model-vault' ? 'Model Vault' :
-                         p.replace('-', ' ')}
-                      </span>
-                    </div>
-                    {(config.provider === p || (p === 'desktop-mode' && window.matchMedia('(display-mode: standalone)').matches)) && <CheckCircle2 className="w-4 h-4" />}
-                  </button>
-                ))}
+                {(['gemini', 'custom-proprietary', 'local-hosted', 'desktop-mode', 'custom-model-vault'] as (OrchestratorProvider | 'desktop-mode')[]).map((p) => {
+                  const isTabActive = 
+                    (p === 'desktop-mode' && activeTab === 'desktop') ||
+                    (p === 'custom-model-vault' && activeTab === 'vault') ||
+                    (p === 'custom-proprietary' && activeTab === 'custom-proprietary') ||
+                    (p === 'gemini' && activeTab === 'gemini') ||
+                    (p === 'local-hosted' && activeTab === 'local-hosted');
+
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        if (p === 'desktop-mode') setActiveTab('desktop');
+                        else if (p === 'custom-model-vault') setActiveTab('vault');
+                        else {
+                          setActiveTab(p);
+                          onUpdate({ ...config, provider: p as OrchestratorProvider });
+                        }
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left",
+                        isTabActive
+                          ? "bg-orange-500/10 border-orange-500/50 text-orange-500" 
+                          : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        {p === 'gemini' ? <Globe className="w-4 h-4" /> : 
+                         p === 'local-hosted' ? <Server className="w-4 h-4" /> : 
+                         p === 'desktop-mode' ? <Monitor className="w-4 h-4" /> :
+                         p === 'custom-model-vault' ? <BrainCircuit className="w-4 h-4" /> :
+                         <Shield className="w-4 h-4" />}
+                        <span className="text-xs font-bold uppercase tracking-tighter">
+                          {p === 'desktop-mode' ? 'Desktop App' : 
+                           p === 'custom-model-vault' ? 'Model Vault' :
+                           p.replace('-', ' ')}
+                        </span>
+                      </div>
+                      {isTabActive && <CheckCircle2 className="w-4 h-4" />}
+                    </button>
+                  );
+                })}
               </div>
             </ScrollArea>
           </CardContent>
@@ -119,8 +134,9 @@ export default function OrchestratorSettings({ config, onUpdate, customModels, s
           </CardHeader>
           <CardContent className="space-y-6">
             <Tabs 
-              value={config.provider === 'custom-model-vault' ? 'vault' : config.provider === 'custom-proprietary' ? 'custom-proprietary' : config.provider} 
+              value={activeTab} 
               onValueChange={(v) => {
+                setActiveTab(v);
                 if (v === 'vault') onUpdate({ ...config, provider: 'custom-model-vault' });
                 else if (v === 'desktop') { /* Purely visual info */ }
                 else onUpdate({ ...config, provider: v as OrchestratorProvider });

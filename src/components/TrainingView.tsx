@@ -83,7 +83,7 @@ import {
   ChevronRight,
   Info
 } from 'lucide-react';
-import { TrainingJob, TrainingMethodology, AgentConfig, TrainingMetric, GPUType } from '../types';
+import { TrainingJob, TrainingMethodology, AgentConfig, TrainingMetric, GPUType, CustomModel } from '../types';
 import { toast } from 'sonner';
 
 import { generateArenaResponses, orchestrateAgentResponse, generateSyntheticData } from '../services/geminiService';
@@ -92,9 +92,10 @@ interface TrainingViewProps {
   agents: AgentConfig[];
   jobs: TrainingJob[];
   setJobs: React.Dispatch<React.SetStateAction<TrainingJob[]>>;
+  setCustomModels?: React.Dispatch<React.SetStateAction<CustomModel[]>>;
 }
 
-export default function TrainingView({ agents, jobs, setJobs }: TrainingViewProps) {
+export default function TrainingView({ agents, jobs, setJobs, setCustomModels }: TrainingViewProps) {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [metricsViewMode, setMetricsViewMode] = useState<'steps' | 'epochs'>('steps');
@@ -296,6 +297,51 @@ export default function TrainingView({ agents, jobs, setJobs }: TrainingViewProp
       setArenaResponses([]);
     } catch (e) {
       toast.error("Failed to sync preference with Bastion.");
+    }
+  };
+
+  const handleRegisterToVault = (job: TrainingJob) => {
+    if (!setCustomModels) return;
+
+    const newModel: CustomModel = {
+      id: `model-trained-${Date.now()}`,
+      name: `${job.agentName} (Trained v${job.id.split('-').pop()})`,
+      type: 'LLM',
+      format: 'GGUF',
+      uploadedAt: Date.now(),
+      path: `bastion://kernel/weights/${job.id}`
+    };
+
+    setCustomModels(prev => [...prev, newModel]);
+    toast.success("Intelligence snapshot committed to vault", {
+      description: "Model is now available for cross-model distillation and deployment."
+    });
+  };
+
+  const handleCompileEdge = async (job: TrainingJob) => {
+    toast.info("Initializing Edge Compiler...", {
+      description: "Optimizing tensors for NPU deployment architecture."
+    });
+    
+    try {
+      const response = await fetch('/api/edge/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelId: job.id,
+          targetArchitecture: 'qnn-npu-v4'
+        })
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        toast.success("Edge compilation complete", {
+          description: "StableHLO binary package generated and secured."
+        });
+      } else {
+        toast.error("Compilation fault", { description: data.error });
+      }
+    } catch (err) {
+      toast.error("Compiler bridge connection error");
     }
   };
 
@@ -873,6 +919,38 @@ export default function TrainingView({ agents, jobs, setJobs }: TrainingViewProp
 ${activeJob.metrics.slice(-5).map(m => `[STEP ${m.step}] T: ${m.gpuTemp?.toFixed(1)}°C | P: ${m.gpuPower?.toFixed(1)}W | VRAM: ${m.vramUsage?.toFixed(2)}GB`).join('\n')}
 ${activeJob.status === 'training' ? `[ACTIVE] Distributed sync over ${activeJob.config.protocol}...` : '[END] Weight convergence reached. Saving snapshot...'}`}
                   </pre>
+
+                  {activeJob.status === 'completed' && (
+                    <div className="mt-4 flex items-center gap-3">
+                      <Button 
+                        size="sm" 
+                        variant="default"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+                        onClick={() => handleRegisterToVault(activeJob)}
+                      >
+                        <BrainCircuit className="w-3.5 h-3.5 mr-2" />
+                        Register to Vault
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        className="bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border-blue-500/30 font-bold text-xs"
+                        onClick={() => handleCompileEdge(activeJob)}
+                      >
+                        <Cpu className="w-3.5 h-3.5 mr-2" />
+                        Compile for Edge
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-zinc-800 text-zinc-400 hover:text-white text-xs"
+                        onClick={() => alert("Model weights exported to .gguf format (mock binary)")}
+                      >
+                        <Download className="w-3.5 h-3.5 mr-2" />
+                        Export Weights
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
