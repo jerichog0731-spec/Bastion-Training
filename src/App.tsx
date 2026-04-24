@@ -65,7 +65,7 @@ import Analytics from './components/Analytics';
 import Simulator from './components/Simulator';
 import TrainingView, { generateDummyMetrics } from './components/TrainingView';
 import VersionControl from './components/VersionControl';
-import { GeminiOrchestrator } from './components/GeminiOrchestrator';
+import { LocalOrchestrator } from './components/LocalOrchestrator';
 import { UniversalOrchestrator } from './components/UniversalOrchestrator';
 import BastionView from './components/BastionView';
 import OrchestratorSettings from './components/OrchestratorSettings';
@@ -369,7 +369,7 @@ export default function App() {
                     id: `agent-${Date.now()}`,
                     name: Math.random() > 0.5 ? `${template.name} - Custom` : template.name,
                     description: template.description,
-                    coreModel: customizedModel || template.defaultModel || 'Gemini 1.5 Pro',
+                    coreModel: customizedModel || template.defaultModel || 'Local Bastion Core',
                     systemInstruction: template.systemPrompt,
                     modules: [
                       ...PREBUILT_MODULES.filter(m => template.modules.includes(m.id)),

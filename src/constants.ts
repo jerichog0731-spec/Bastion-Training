@@ -513,7 +513,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You specialize in making AI agents run on low-power devices without sacrificing accuracy.',
     modules: ['quantization', 'pruning', 'distillation'],
     icon: 'Cpu',
-    defaultModel: 'Gemini 1.5 Flash'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-17',
@@ -523,7 +523,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You are a neutral observer ensuring community guidelines are respected.',
     modules: ['sentiment-analysis', 'webhook-output'],
     icon: 'ShieldCheck',
-    defaultModel: 'Gemini 1.5 Flash'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-18',
@@ -533,7 +533,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You are a virtuoso composer specializing in algorithmic music generation.',
     modules: ['code-interpreter', 'jsonl-exporter'],
     icon: 'Music',
-    defaultModel: 'Gemini 1.5 Pro'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-19',
@@ -543,7 +543,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You are a retail strategist focused on maintaining price competitiveness.',
     modules: ['web-search', 'api-connector'],
     icon: 'Tag',
-    defaultModel: 'Gemini 1.5 Flash'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-20',
@@ -563,7 +563,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You are a quantitative analyst specializing in neural financial forecasting.',
     modules: ['dense-layer', 'sentiment-analysis'],
     icon: 'TrendingUp',
-    defaultModel: 'Gemini 1.5 Pro'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-22',
@@ -573,7 +573,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You are a master polyglot enabling global communication.',
     modules: ['whisper-stt', 'elevenlabs-tts'],
     icon: 'Languages',
-    defaultModel: 'Gemini 1.5 Flash'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-23',
@@ -583,7 +583,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You are an immersion-focused game designer and character architect.',
     modules: ['episodic-memory', 'memory-storage'],
     icon: 'Gamepad2',
-    defaultModel: 'Gemini 1.5 Pro'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-24',
@@ -593,7 +593,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You are an environmental consultant dedicated to reducing carbon footprints.',
     modules: ['code-interpreter', 'web-search'],
     icon: 'Leaf',
-    defaultModel: 'Gemini 1.5 Flash'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-25',
@@ -603,7 +603,7 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     systemPrompt: 'You are a white-hat hacker identifying network security weaknesses.',
     modules: ['code-interpreter', 'api-connector'],
     icon: 'Network',
-    defaultModel: 'Gemini 1.5 Pro'
+    defaultModel: 'Local Bastion Core'
   },
   {
     id: 't-26',

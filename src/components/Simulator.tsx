@@ -56,7 +56,7 @@ export default function Simulator({ agent }: SimulatorProps) {
     setInput('');
     setIsLoading(true);
 
-    // Prepare history for Gemini
+    // Prepare history for local core
     const history = messages.map(m => ({
       role: m.role,
       parts: [{ text: m.content }]

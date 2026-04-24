@@ -77,7 +77,7 @@ export default function TemplatesView({ onDeploy }: TemplatesViewProps) {
 
   const handleOpenDeploy = (template: AgentTemplate) => {
     setSelectedTemplate(template);
-    setCustomModel(template.defaultModel || 'Gemini 1.5 Flash');
+    setCustomModel(template.defaultModel || 'Local Bastion Core');
     setExtraModules([]);
   };
 
