@@ -43,7 +43,8 @@ import {
   AgentVersion, 
   TrainingJob,
   OrchestratorConfig,
-  TutoringSession
+  TutoringSession,
+  CustomModel
 } from './types';
 import { PREBUILT_MODULES, WORK_SKILLS, AGENT_TEMPLATES, ICON_MAP, CORE_AI_MODELS } from './constants';
 
@@ -77,16 +78,19 @@ export default function App() {
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [jobs, setJobs] = useState<TrainingJob[]>([]);
   const [versions, setVersions] = useState<AgentVersion[]>([]);
+  const [customModels, setCustomModels] = useState<CustomModel[]>([]);
   
   // Hydrate state from localStorage on mount
   useEffect(() => {
     const savedAgents = localStorage.getItem('bastion_agents');
     const savedJobs = localStorage.getItem('bastion_training_jobs');
     const savedVersions = localStorage.getItem('bastion_versions');
+    const savedModels = localStorage.getItem('bastion_custom_models');
 
     if (savedAgents) setAgents(JSON.parse(savedAgents));
     if (savedJobs) setJobs(JSON.parse(savedJobs));
     if (savedVersions) setVersions(JSON.parse(savedVersions));
+    if (savedModels) setCustomModels(JSON.parse(savedModels));
   }, []);
 
   // Persist state to localStorage on changes
@@ -101,6 +105,10 @@ export default function App() {
   useEffect(() => {
     if (versions.length > 0) localStorage.setItem('bastion_versions', JSON.stringify(versions));
   }, [versions]);
+
+  useEffect(() => {
+    if (customModels.length > 0) localStorage.setItem('bastion_custom_models', JSON.stringify(customModels));
+  }, [customModels]);
 
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [orchestratorConfig, setOrchestratorConfig] = useState<OrchestratorConfig>({
@@ -251,7 +259,7 @@ export default function App() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            {activeTab === 'builder' && (
+            {activeTab === 'builder' && selectedAgent && (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -331,6 +339,7 @@ export default function App() {
                 {activeTab === 'tutoring-lab' && (
                   <TutoringLab 
                     agents={agents} 
+                    customModels={customModels}
                     sessions={tutoringSessions} 
                     onStartSession={(s) => setTutoringSessions([s as TutoringSession, ...tutoringSessions])} 
                   />
@@ -340,6 +349,8 @@ export default function App() {
                   <OrchestratorSettings 
                     config={orchestratorConfig} 
                     onUpdate={setOrchestratorConfig} 
+                    customModels={customModels}
+                    setCustomModels={setCustomModels}
                   />
                 )}
                 {activeTab === 'orchestrator' && (
@@ -377,7 +388,7 @@ export default function App() {
                     />
                   </div>
                 )}
-                {activeTab === 'builder' && (
+                {activeTab === 'builder' && selectedAgent && (
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     <div className="lg:col-span-3">
                       <Builder 
@@ -390,8 +401,18 @@ export default function App() {
                     </div>
                   </div>
                 )}
+                {activeTab === 'builder' && !selectedAgent && (
+                  <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <Bot className="w-12 h-12 text-zinc-700 mb-4" />
+                    <h3 className="text-lg font-medium text-zinc-400">No Agent Selected</h3>
+                    <p className="text-sm text-zinc-500">Initialize an agent in the dashboard or templates to use the builder.</p>
+                    <Button variant="outline" className="mt-4" onClick={() => setActiveTab('dashboard')}>
+                      Go to Dashboard
+                    </Button>
+                  </div>
+                )}
                 {activeTab === 'analytics' && <Analytics />}
-                {activeTab === 'deployments' && (
+                {activeTab === 'deployments' && selectedAgent && (
                   <VersionControl 
                     agent={selectedAgent} 
                     versions={versions} 
@@ -404,6 +425,13 @@ export default function App() {
                       toast.info("Version snapshot removed");
                     }}
                   />
+                )}
+                {activeTab === 'deployments' && !selectedAgent && (
+                  <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <History className="w-12 h-12 text-zinc-700 mb-4" />
+                    <h3 className="text-lg font-medium text-zinc-400">No Agent Selected</h3>
+                    <p className="text-sm text-zinc-500">Initialize an agent to view deployment history.</p>
+                  </div>
                 )}
               </motion.div>
             </AnimatePresence>

@@ -1,21 +1,24 @@
 import React from 'react';
-import { Shield, Server, Key, Globe, CheckCircle2, AlertCircle, Cpu, Monitor, Download, ArrowUpRight } from 'lucide-react';
+import { Shield, Server, Key, Globe, CheckCircle2, AlertCircle, Cpu, Monitor, Download, ArrowUpRight, Plus, Trash2, FileUp, BrainCircuit, BrainCircuit as BrainCircuitIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { OrchestratorConfig, OrchestratorProvider } from '../types';
+import { OrchestratorConfig, CustomModel, OrchestratorProvider } from '../types';
 import { toast } from 'sonner';
 
 interface OrchestratorSettingsProps {
   config: OrchestratorConfig;
   onUpdate: (config: OrchestratorConfig) => void;
+  customModels: CustomModel[];
+  setCustomModels: React.Dispatch<React.SetStateAction<CustomModel[]>>;
 }
 
-export default function OrchestratorSettings({ config, onUpdate }: OrchestratorSettingsProps) {
+export default function OrchestratorSettings({ config, onUpdate, customModels, setCustomModels }: OrchestratorSettingsProps) {
   const [testStatus, setTestStatus] = React.useState<'idle' | 'testing' | 'success' | 'error'>('idle');
 
   const handleTestConnection = async () => {
@@ -62,36 +65,43 @@ export default function OrchestratorSettings({ config, onUpdate }: OrchestratorS
           <CardHeader>
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-zinc-400">Environment Control</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {(['gemini', 'custom-proprietary', 'local-hosted', 'desktop-mode'] as (OrchestratorProvider | 'desktop-mode')[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  if (p !== 'desktop-mode') {
-                    onUpdate({ ...config, provider: p });
-                  } else {
-                    // Custom handle for desktop mode
-                  }
-                }}
-                className={cn(
-                  "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left",
-                  (config.provider === p || (p === 'desktop-mode' && window.matchMedia('(display-mode: standalone)').matches))
-                    ? "bg-orange-500/10 border-orange-500/50 text-orange-500" 
-                    : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  {p === 'gemini' ? <Globe className="w-4 h-4" /> : 
-                   p === 'local-hosted' ? <Server className="w-4 h-4" /> : 
-                   p === 'desktop-mode' ? <Monitor className="w-4 h-4" /> :
-                   <Shield className="w-4 h-4" />}
-                  <span className="text-xs font-bold uppercase tracking-tighter">
-                    {p === 'desktop-mode' ? 'Desktop App' : p.replace('-', ' ')}
-                  </span>
-                </div>
-                {(config.provider === p || (p === 'desktop-mode' && window.matchMedia('(display-mode: standalone)').matches)) && <CheckCircle2 className="w-4 h-4" />}
-              </button>
-            ))}
+          <CardContent className="p-0">
+            <ScrollArea className="h-[500px] px-6 pb-6">
+              <div className="space-y-4">
+                {(['gemini', 'custom-proprietary', 'local-hosted', 'desktop-mode', 'custom-model-vault'] as (OrchestratorProvider | 'desktop-mode')[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      if (p === 'desktop-mode') {
+                        // Special case for desktop display mode (purely visual switch in UI state)
+                      } else {
+                        onUpdate({ ...config, provider: p as OrchestratorProvider });
+                      }
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left",
+                      (config.provider === p || (p === 'desktop-mode' && window.matchMedia('(display-mode: standalone)').matches))
+                        ? "bg-orange-500/10 border-orange-500/50 text-orange-500" 
+                        : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      {p === 'gemini' ? <Globe className="w-4 h-4" /> : 
+                       p === 'local-hosted' ? <Server className="w-4 h-4" /> : 
+                       p === 'desktop-mode' ? <Monitor className="w-4 h-4" /> :
+                       p === 'custom-model-vault' ? <BrainCircuit className="w-4 h-4" /> :
+                       <Shield className="w-4 h-4" />}
+                      <span className="text-xs font-bold uppercase tracking-tighter">
+                        {p === 'desktop-mode' ? 'Desktop App' : 
+                         p === 'custom-model-vault' ? 'Model Vault' :
+                         p.replace('-', ' ')}
+                      </span>
+                    </div>
+                    {(config.provider === p || (p === 'desktop-mode' && window.matchMedia('(display-mode: standalone)').matches)) && <CheckCircle2 className="w-4 h-4" />}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
 
@@ -108,13 +118,24 @@ export default function OrchestratorSettings({ config, onUpdate }: OrchestratorS
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Tabs defaultValue={config.provider} className="w-full">
-              <TabsList className="bg-black border-zinc-800">
-                <TabsTrigger value="gemini" className="text-[10px] uppercase font-bold tracking-widest">Cloud</TabsTrigger>
-                <TabsTrigger value="custom-proprietary" className="text-[10px] uppercase font-bold tracking-widest">Custom</TabsTrigger>
-                <TabsTrigger value="local-hosted" className="text-[10px] uppercase font-bold tracking-widest">Local Cluster</TabsTrigger>
-                <TabsTrigger value="desktop" className="text-[10px] uppercase font-bold tracking-widest text-orange-500">Standalone App</TabsTrigger>
-              </TabsList>
+            <Tabs 
+              value={config.provider === 'custom-model-vault' ? 'vault' : config.provider === 'custom-proprietary' ? 'custom-proprietary' : config.provider} 
+              onValueChange={(v) => {
+                if (v === 'vault') onUpdate({ ...config, provider: 'custom-model-vault' });
+                else if (v === 'desktop') { /* Purely visual info */ }
+                else onUpdate({ ...config, provider: v as OrchestratorProvider });
+              }} 
+              className="w-full"
+            >
+              <ScrollArea className="w-full" orientation="horizontal">
+                <TabsList className="bg-black border-zinc-800 inline-flex w-max min-w-full">
+                  <TabsTrigger value="gemini" className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">Cloud</TabsTrigger>
+                  <TabsTrigger value="custom-proprietary" className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">Custom</TabsTrigger>
+                  <TabsTrigger value="local-hosted" className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">Local Cluster</TabsTrigger>
+                  <TabsTrigger value="desktop" className="text-[10px] uppercase font-bold tracking-widest text-orange-500 whitespace-nowrap">Standalone App</TabsTrigger>
+                  <TabsTrigger value="vault" className="text-[10px] uppercase font-bold tracking-widest text-emerald-500 whitespace-nowrap">Model Vault</TabsTrigger>
+                </TabsList>
+              </ScrollArea>
 
               <TabsContent value="gemini" className="pt-4">
                 <div className="p-8 text-center space-y-4 border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/50">
@@ -276,6 +297,102 @@ export default function OrchestratorSettings({ config, onUpdate }: OrchestratorS
                     </p>
                   </div>
                   <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 uppercase text-[8px] font-black tracking-widest">Enterprise Feature</Badge>
+                </div>
+              </TabsContent>
+              <TabsContent value="vault" className="pt-4 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <Card className="bg-zinc-950 border-zinc-800">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold uppercase tracking-tight text-white">Import Neural Model</CardTitle>
+                        <CardDescription className="text-[10px]">Add proprietary GGUF, ONNX, or SafeTensors binaries.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="p-4 border-2 border-dashed border-zinc-800 rounded-xl bg-black flex flex-col items-center justify-center gap-3 hover:border-zinc-700 transition-all cursor-pointer group" onClick={() => {
+                          const name = prompt("Enter model name:");
+                          if (!name) return;
+                          const path = prompt("Enter local file path (optional):");
+                          const newModel: CustomModel = {
+                            id: `model-${Date.now()}`,
+                            name,
+                            path: path || undefined,
+                            type: 'LLM',
+                            format: 'GGUF',
+                            uploadedAt: Date.now()
+                          };
+                          setCustomModels([...customModels, newModel]);
+                          toast.success(`Neural model "${name}" registered in vault.`);
+                        }}>
+                          <FileUp className="w-8 h-8 text-zinc-600 group-hover:text-emerald-500 transition-colors" />
+                          <p className="text-[10px] uppercase font-bold text-zinc-500">Select File or Specify Path</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl space-y-2">
+                       <h4 className="text-[10px] uppercase font-black text-zinc-500 tracking-tighter">Vault Statistics</h4>
+                       <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-black p-2 rounded-lg border border-zinc-800">
+                             <div className="text-[8px] text-zinc-600 uppercase font-bold">Total Models</div>
+                             <div className="text-xl font-bold text-white tracking-tighter">{customModels.length}</div>
+                          </div>
+                          <div className="bg-black p-2 rounded-lg border border-zinc-800">
+                             <div className="text-[8px] text-zinc-600 uppercase font-bold">Active Format</div>
+                             <div className="text-xl font-bold text-emerald-500 tracking-tighter">GGUF</div>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest pl-1">Registered Prototypes</h3>
+                    <ScrollArea className="h-[300px]">
+                      <div className="space-y-2">
+                        {customModels.length === 0 ? (
+                           <div className="py-20 text-center border border-dashed border-zinc-800 rounded-xl opacity-20">
+                             <Shield className="w-8 h-8 mx-auto mb-2" />
+                             <p className="text-[8px] uppercase font-bold">Vault Empty</p>
+                           </div>
+                        ) : (
+                          customModels.map(model => (
+                            <div key={model.id} className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between hover:border-zinc-700 transition-all group">
+                               <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center">
+                                     <BrainCircuit className="w-4 h-4 text-emerald-500" />
+                                  </div>
+                                  <div className="min-w-0">
+                                     <p className="text-xs font-bold text-white truncate">{model.name}</p>
+                                     <p className="text-[9px] text-zinc-500 font-mono truncate">{model.path || 'Virtual Memory'}</p>
+                                  </div>
+                               </div>
+                               <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-[8px] border-emerald-500/20 text-emerald-500 bg-emerald-500/5">{model.format}</Badge>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-7 w-7 text-zinc-700 hover:text-red-500"
+                                    onClick={() => {
+                                      setCustomModels(customModels.filter(m => m.id !== model.id));
+                                      toast.info(`Model ${model.name} purged from vault.`);
+                                    }}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                               </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
+
+                    <Button 
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase h-9"
+                      onClick={() => onUpdate({ ...config, provider: 'custom-model-vault', modelName: customModels[0]?.name || 'No model selected' })}
+                      disabled={customModels.length === 0}
+                    >
+                      Mount Selection to Brain
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>

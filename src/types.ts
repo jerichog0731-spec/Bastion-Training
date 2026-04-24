@@ -21,7 +21,18 @@ export interface AgentModule {
   dependencies?: string[]; // IDs of modules this module depends on
 }
 
-export type OrchestratorProvider = 'gemini' | 'custom-proprietary' | 'local-hosted';
+export type OrchestratorProvider = 'gemini' | 'custom-proprietary' | 'local-hosted' | 'custom-model-vault';
+
+export interface CustomModel {
+  id: string;
+  name: string;
+  type: 'LLM' | 'Vision' | 'Audio' | 'Custom';
+  path?: string; // Local path for desktop app
+  file?: string; // Uploaded filename
+  format: 'GGUF' | 'ONNX' | 'SafeTensors' | 'Other';
+  parameters?: number; // e.g. 7.0 for 7B
+  uploadedAt: number;
+}
 
 export interface OrchestratorConfig {
   provider: OrchestratorProvider;

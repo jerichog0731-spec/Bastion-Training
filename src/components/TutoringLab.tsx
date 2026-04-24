@@ -5,17 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AgentConfig, TutoringSession } from '../types';
+import { AgentConfig, TutoringSession, CustomModel } from '../types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { BrainCircuit, Cpu } from 'lucide-react';
 
 interface TutoringLabProps {
   agents: AgentConfig[];
+  customModels: CustomModel[];
   sessions: TutoringSession[];
   onStartSession: (session: Partial<TutoringSession>) => void;
 }
 
-export default function TutoringLab({ agents, sessions, onStartSession }: TutoringLabProps) {
+export default function TutoringLab({ agents, customModels, sessions, onStartSession }: TutoringLabProps) {
   const [selectedTeacherId, setSelectedTeacherId] = React.useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = React.useState<string>('');
 
@@ -63,6 +65,7 @@ export default function TutoringLab({ agents, sessions, onStartSession }: Tutori
               <label className="text-[10px] uppercase font-bold text-zinc-500">Teacher Entity (Expert)</label>
               <ScrollArea className="h-[200px] pr-4">
                 <div className="grid gap-2">
+                  <div className="text-[8px] uppercase font-bold text-zinc-600 mb-1 px-1">Neural Agents</div>
                   {agents.map(agent => (
                     <button
                       key={agent.id}
@@ -76,6 +79,25 @@ export default function TutoringLab({ agents, sessions, onStartSession }: Tutori
                       <span className="text-xs font-bold truncate">{agent.name}</span>
                     </button>
                   ))}
+                  
+                  {customModels.length > 0 && (
+                    <>
+                      <div className="text-[8px] uppercase font-bold text-emerald-600 mb-1 mt-4 px-1">Vault Models</div>
+                      {customModels.map(model => (
+                        <button
+                          key={model.id}
+                          onClick={() => setSelectedTeacherId(model.id)}
+                          className={cn(
+                            "flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
+                            selectedTeacherId === model.id ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                          )}
+                        >
+                          <BrainCircuit className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-xs font-bold truncate">{model.name}</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -88,6 +110,7 @@ export default function TutoringLab({ agents, sessions, onStartSession }: Tutori
               <label className="text-[10px] uppercase font-bold text-zinc-500">Student Entity (Learner)</label>
               <ScrollArea className="h-[200px] pr-4">
                 <div className="grid gap-2">
+                  <div className="text-[8px] uppercase font-bold text-zinc-600 mb-1 px-1">Neural Agents</div>
                   {agents.map(agent => (
                     <button
                       key={agent.id}
@@ -101,6 +124,25 @@ export default function TutoringLab({ agents, sessions, onStartSession }: Tutori
                       <span className="text-xs font-bold truncate">{agent.name}</span>
                     </button>
                   ))}
+
+                  {customModels.length > 0 && (
+                    <>
+                      <div className="text-[8px] uppercase font-bold text-emerald-600 mb-1 mt-4 px-1">Vault Models</div>
+                      {customModels.map(model => (
+                        <button
+                          key={model.id}
+                          onClick={() => setSelectedStudentId(model.id)}
+                          className={cn(
+                            "flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
+                            selectedStudentId === model.id ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                          )}
+                        >
+                          <Cpu className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-xs font-bold truncate">{model.name}</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -130,8 +172,8 @@ export default function TutoringLab({ agents, sessions, onStartSession }: Tutori
                 </div>
               ) : (
                 sessions.map(session => {
-                  const teacher = agents.find(a => a.id === session.teacherAgentId);
-                  const student = agents.find(a => a.id === session.studentAgentId);
+                  const teacher = agents.find(a => a.id === session.teacherAgentId) || customModels.find(m => m.id === session.teacherAgentId);
+                  const student = agents.find(a => a.id === session.studentAgentId) || customModels.find(m => m.id === session.studentAgentId);
                   return (
                     <Card key={session.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-all overflow-hidden relative group">
                       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">

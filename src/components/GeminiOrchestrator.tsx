@@ -80,7 +80,7 @@ export function GeminiOrchestrator({ agents, onUpdateAgent, onStartTraining }: G
       - Optimization: Compression & Speed.
       - Outputs: Data delivery nodes.
       
-      Current Workspace State: ${JSON.stringify(agents.map(a => ({ id: a.id, name: a.name, modules: a.modules.map(m => ({ name: m.name, config: m.config })) })))}
+      Current Workspace State: ${JSON.stringify(agents.map(a => ({ id: a.id, name: a.name, modules: (a.modules || []).map(m => ({ name: m.name, config: m.config })) })))}
       
       Maintain a technical, professional Architect persona. Use bold text for module names.`;
 

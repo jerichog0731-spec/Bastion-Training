@@ -34,7 +34,7 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [isComparing, setIsComparing] = useState(false);
 
-  const agentVersions = versions.filter(v => v.agentId === agent.id).sort((a,b) => b.createdAt - a.createdAt);
+  const agentVersions = versions.filter(v => v.agentId === agent?.id).sort((a,b) => b.createdAt - a.createdAt);
 
   const toggleCompare = (id: string) => {
     if (compareIds.includes(id)) {
@@ -52,7 +52,7 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
     return agentVersions.filter(v => compareIds.includes(v.id));
   };
 
-  const currentConfigHash = JSON.stringify(agent.modules);
+  const currentConfigHash = JSON.stringify(agent?.modules || []);
 
   return (
     <div className="space-y-6">
@@ -62,7 +62,7 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
             <History className="w-6 h-6 text-orange-500" />
             Neural Version Explorer
           </h2>
-          <p className="text-sm text-zinc-500 font-mono italic serif">Managing snapshots for {agent.name}</p>
+          <p className="text-sm text-zinc-500 font-mono italic serif">Managing snapshots for {agent?.name || 'Unknown Agent'}</p>
         </div>
         <div className="flex items-center gap-3">
           {compareIds.length === 2 && (
@@ -89,7 +89,7 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
                 <CardDescription className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1">Immutable configuration snapshots</CardDescription>
               </div>
               <Badge variant="outline" className="border-emerald-500/20 text-emerald-500 bg-emerald-500/5">
-                Current: v{agent.version}
+                Current: v{agent?.version || '0.0.0'}
               </Badge>
             </div>
           </CardHeader>
@@ -103,7 +103,7 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
                   </div>
                 )}
                 {agentVersions.map((v, i) => {
-                  const isCurrent = v.version === agent.version;
+                  const isCurrent = v.version === agent?.version;
                   const isSelected = compareIds.includes(v.id);
                   
                   return (
@@ -145,7 +145,7 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
                             </div>
                             <div className="flex items-center gap-1.5 text-[10px] text-zinc-600 font-mono">
                               <Split className="w-3 h-3" />
-                              {v.config.modules.length} Modules
+                              {v.config?.modules?.length || 0} Modules
                             </div>
                           </div>
                         </div>
@@ -201,14 +201,14 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
                   <div className="space-y-3">
                     <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Logic Core</h4>
                     <div className="bg-black/50 p-4 rounded-xl border border-zinc-800">
-                      <p className="text-sm text-zinc-300 leading-relaxed italic">"{v.config.systemInstruction}"</p>
+                      <p className="text-sm text-zinc-300 leading-relaxed italic">"{v.config?.systemInstruction || 'No mission briefing'}"</p>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Module Pipeline ({v.config.modules.length})</h4>
+                    <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Module Pipeline ({v.config?.modules?.length || 0})</h4>
                     <div className="grid grid-cols-1 gap-2">
-                      {v.config.modules.map(m => (
+                      {v.config?.modules?.map(m => (
                         <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-zinc-950 border border-zinc-800">
                           <div className={cn(
                             "w-8 h-8 rounded flex items-center justify-center text-[10px]",
@@ -231,7 +231,7 @@ export default function VersionControl({ agent, versions, onRestore, onDelete }:
                   <div className="pt-6 border-t border-zinc-800">
                     <Button 
                       className="w-full bg-zinc-800 hover:bg-zinc-700 text-white"
-                      disabled={v.version === agent.version}
+                      disabled={v.version === agent?.version}
                       onClick={() => {
                         onRestore(v);
                         setIsComparing(false);

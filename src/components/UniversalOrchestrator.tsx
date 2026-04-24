@@ -64,7 +64,7 @@ export function UniversalOrchestrator({ agents, orchestratorConfig, onUpdateAgen
       Provider: ${orchestratorConfig.provider}
       Active Model: ${orchestratorConfig.modelName}
       
-      Current Workspace State: ${JSON.stringify(agents.map(a => ({ name: a.name, modules: a.modules.map(m => m.name) })))}`;
+      Current Workspace State: ${JSON.stringify(agents.map(a => ({ name: a.name, modules: (a.modules || []).map(m => m.name) })))}`;
 
       const tools = [
         {

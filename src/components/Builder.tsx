@@ -148,8 +148,8 @@ function CanvasDroppable({ children, isDragging }: { children: React.ReactNode, 
 }
 
 export default function Builder({ agent, onUpdate }: BuilderProps) {
-  const [activeModules, setActiveModules] = useState<AgentModule[]>(agent.modules);
-  const [coreModel, setCoreModel] = useState(agent.coreModel || 'Gemini 1.5 Flash');
+  const [activeModules, setActiveModules] = useState<AgentModule[]>(agent?.modules || []);
+  const [coreModel, setCoreModel] = useState(agent?.coreModel || 'Gemini 1.5 Flash');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
